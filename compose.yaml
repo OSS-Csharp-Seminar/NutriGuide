@@ -1,0 +1,7 @@
+﻿services:
+  nutriguide.api:
+    image: nutriguide.api
+    build:
+      context: .
+      dockerfile: NutriGuide.API/Dockerfile
+
