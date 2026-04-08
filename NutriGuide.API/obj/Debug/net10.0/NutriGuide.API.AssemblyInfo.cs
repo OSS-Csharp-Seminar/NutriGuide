@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("NutriGuide.API")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+7669b4bcd6297b7d899bc3f1dcca3d38a5bbbeef")]
 [assembly: System.Reflection.AssemblyProductAttribute("NutriGuide.API")]
 [assembly: System.Reflection.AssemblyTitleAttribute("NutriGuide.API")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
