@@ -8,7 +8,6 @@ C:\Users\minip\RiderProjects\NutriGuide\NutriGuide.API\bin\Debug\net10.0\NutriGu
 C:\Users\minip\RiderProjects\NutriGuide\NutriGuide.API\bin\Debug\net10.0\NutriGuide.API.pdb
 C:\Users\minip\RiderProjects\NutriGuide\NutriGuide.API\bin\Debug\net10.0\Humanizer.dll
 C:\Users\minip\RiderProjects\NutriGuide\NutriGuide.API\bin\Debug\net10.0\Microsoft.AspNetCore.Identity.EntityFrameworkCore.dll
-C:\Users\minip\RiderProjects\NutriGuide\NutriGuide.API\bin\Debug\net10.0\Microsoft.AspNetCore.OpenApi.dll
 C:\Users\minip\RiderProjects\NutriGuide\NutriGuide.API\bin\Debug\net10.0\Microsoft.Build.Framework.dll
 C:\Users\minip\RiderProjects\NutriGuide\NutriGuide.API\bin\Debug\net10.0\Microsoft.CodeAnalysis.dll
 C:\Users\minip\RiderProjects\NutriGuide\NutriGuide.API\bin\Debug\net10.0\Microsoft.CodeAnalysis.CSharp.dll

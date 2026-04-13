@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("NutriGuide.Domain")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+7669b4bcd6297b7d899bc3f1dcca3d38a5bbbeef")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+a7202c72a99ea8964e0e2475fb5ed7b9e900abb9")]
 [assembly: System.Reflection.AssemblyProductAttribute("NutriGuide.Domain")]
 [assembly: System.Reflection.AssemblyTitleAttribute("NutriGuide.Domain")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
