@@ -1,0 +1,28 @@
+﻿# Build results
+bin/
+obj/
+
+# Visual Studio / Rider
+.vs/
+.idea/
+*.user
+*.suo
+
+# NuGet
+*.nupkg
+packages/
+
+# ASP.NET
+wwwroot/lib/
+
+# Secrets
+appsettings.Development.json
+*.env
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/
