@@ -91,6 +91,7 @@ builder.Services.AddControllers();
 // Servisi
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IUserProfileService, UserProfileService>();
+builder.Services.AddScoped<IDailyTargetService, DailyTargetService>();
 
 var app = builder.Build();
 

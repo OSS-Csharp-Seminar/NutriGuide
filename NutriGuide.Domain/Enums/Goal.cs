@@ -3,6 +3,6 @@
 public enum Goal
 {
     Loss,
-    Maintanance,
+    Maintenance,
     Gain
 }
