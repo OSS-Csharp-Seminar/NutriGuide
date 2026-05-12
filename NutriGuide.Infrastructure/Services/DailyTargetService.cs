@@ -127,17 +127,14 @@ public class DailyTargetService : IDailyTargetService
             _ => tdee
         };
 
-        targetCalories = Math.Max(1200, targetCalories); // minimum 1200 kcal
+        targetCalories = Math.Max(1200, targetCalories); 
 
-        // Korak 4 — Makronutrijenti
-        // Proteini: 2g po kg tjelesne težine
-        // Masti: 25% ukupnih kalorija
-        // Ugljikohidrati: ostatak kalorija
+        
         double protein = (double)profile.Weight_kg * 2.0;
         double fat = targetCalories * 0.25 / 9;
         double carbs = (targetCalories - protein * 4 - fat * 9) / 4;
 
-        // Korak 5 — Vlakna (preporuka: 14g na 1000 kcal)
+        
         double fiber = targetCalories / 1000 * 14;
 
         return (
