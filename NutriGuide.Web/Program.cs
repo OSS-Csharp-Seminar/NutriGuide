@@ -94,6 +94,7 @@ builder.Services.AddScoped<IUserProfileService, UserProfileService>();
 builder.Services.AddScoped<IDailyTargetService, DailyTargetService>();
 builder.Services.AddHttpClient<IAiService, AiService>();
 builder.Services.AddScoped<IMealLogService, MealLogService>();
+builder.Services.AddScoped<IAiRecommendationService, AiRecommendationService>();
 
 var app = builder.Build();
 
