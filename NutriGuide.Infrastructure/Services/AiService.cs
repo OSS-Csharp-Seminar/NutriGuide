@@ -113,7 +113,7 @@ public class AiService : IAiService
 
         var prompt = $"""
                       You are a nutrition analyst. Based on what the user has eaten today, suggest their next meal.
-                      Rocommended meal should be realistic and commonly eaten.
+                      Recommended meal should be realistic and commonly eaten.
 
                       Today's meals: {mealsDescription}
 
@@ -125,7 +125,7 @@ public class AiService : IAiService
 
                       Suggest one specific meal that would help reach today's targets.
                       Keep the response concise, 2-3 sentences maximum.
-                      Respond in Enlish language.
+                      Respond in English language.
                       """;
 
         return await SendMessageAsync(prompt);
@@ -186,5 +186,46 @@ public class AiService : IAiService
             .GetProperty("message")
             .GetProperty("content")
             .GetString()!;
+    }
+    
+    public async Task<WellnessAnalysisResult> AnalyzeWellnessAsync(
+        string symptoms, List<MealLog> last48HoursMeals)
+    {
+        var mealsDescription = last48HoursMeals.Any()
+            ? string.Join(", ", last48HoursMeals.Select(m =>
+                $"{m.RawInput} ({m.LoggedAt:dd.MM HH:mm})"))
+            : "No meals logged in the last 48 hours.";
+
+        var jsonStructure = """
+                            {
+                                "analysis": "<2-3 sentences analyzing the nutritional connection to symptoms>",
+                                "suggestedMeal": "<one specific meal suggestion that could help>"
+                            }
+                            """;
+
+        var prompt = $"""
+                      You are a nutrition assistant. The user is not feeling well and needs advice.
+
+                      User symptoms: "{symptoms}"
+
+                      Meals in the last 48 hours: {mealsDescription}
+
+                      Analyze the possible nutritional connection to the symptoms and suggest a specific meal.
+                      Respond ONLY with a valid JSON object, no explanation, no markdown, no extra text.
+
+                      {jsonStructure}
+
+                      Respond in English language.
+                      """;
+
+        var responseText = await SendMessageAsync(prompt);
+
+        var result = JsonSerializer.Deserialize<WellnessAnalysisResult>(responseText,
+            new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+
+        if (result == null)
+            throw new InvalidOperationException("AI nije vratio ispravne podatke.");
+
+        return result;
     }
 }
