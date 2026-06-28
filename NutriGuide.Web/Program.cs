@@ -96,6 +96,7 @@ builder.Services.AddHttpClient<IAiService, AiService>();
 builder.Services.AddScoped<IMealLogService, MealLogService>();
 builder.Services.AddScoped<IAiRecommendationService, AiRecommendationService>();
 builder.Services.AddScoped<IFavoriteMealService, FavoriteMealService>();
+builder.Services.AddScoped<IWellnessService, WellnessService>();
 
 builder.Services.ConfigureApplicationCookie(options =>
 {
