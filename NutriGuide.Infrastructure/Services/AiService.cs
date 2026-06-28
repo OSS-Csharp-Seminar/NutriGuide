@@ -36,45 +36,37 @@ public class AiService : IAiService
     public async Task<NutritionEstimateResult> EstimateNutritionAsync(string mealDescription)
     {
         var prompt = $$"""
-            You are a professional nutrition analyst
-            Analyze the following meal description and estimate its nutritional values.
-            Respond ONLY with a valid JSON object, no explanation, no markdown, no extra text.
+        You are a professional nutrition analyst
+        Analyze the following meal description and estimate its nutritional values.
+        Respond ONLY with a valid JSON object, no explanation, no markdown, no extra text.
 
-            Meal: "{{mealDescription}}"
+        Meal: "{{mealDescription}}"
 
-            Respond with exactly this JSON structure:
+        Respond with exactly this JSON structure:
+    {
+        "calories": 0,
+        "protein_g": 0.0,
+        "carbs_g": 0.0,
+        "fat_g": 0.0,
+        "fiber_g": 0.0,
+        "aiNote": "brief note about the estimation in the same language as the meal description"
+    }
+    """;
+
+        var aiContent = await SendMessageAsync(prompt, temperature: 0.1, maxTokens: 300);
+
+        var cleaned = ExtractJson(aiContent);
+
+        GroqNutritionResponse? result;
+        try
         {
-            "calories": 0,
-            "protein_g": 0.0,
-            "carbs_g": 0.0,
-            "fat_g": 0.0,
-            "fiber_g": 0.0,
-            "aiNote": "brief note about the estimation in the same language as the meal description"
+            result = JsonSerializer.Deserialize<GroqNutritionResponse>(cleaned,
+                new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
         }
-        """;
-
-        var requestBody = new
+        catch (JsonException)
         {
-            model = _model,
-            messages = new[]
-            {
-                new
-                {
-                    role = "user",
-                    content = prompt
-                }
-            },
-            temperature = 0.1,
-            max_tokens = 300
-        };
-
-        var json = JsonSerializer.Serialize(requestBody);
-        var content = new StringContent(json, Encoding.UTF8, "application/json");
-
-        var aiContent = await SendMessageAsync(prompt);
-
-        var result = JsonSerializer.Deserialize<GroqNutritionResponse>(aiContent,
-            new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+            throw new InvalidOperationException("AI returned data that could not be read. Please try rephrasing the meal.");
+        }
 
         if (result == null)
             throw new InvalidOperationException("AI returned invalid data.");
@@ -90,7 +82,32 @@ public class AiService : IAiService
         };
     }
 
-    
+    private static string ExtractJson(string raw)
+    {
+        if (string.IsNullOrWhiteSpace(raw))
+            return raw;
+
+        var text = raw.Trim();
+
+        if (text.StartsWith("```"))
+        {
+            var firstNewline = text.IndexOf('\n');
+            if (firstNewline >= 0)
+                text = text[(firstNewline + 1)..];
+            if (text.EndsWith("```"))
+                text = text[..^3];
+            text = text.Trim();
+        }
+
+        var start = text.IndexOf('{');
+        var end = text.LastIndexOf('}');
+        if (start >= 0 && end > start)
+            text = text[start..(end + 1)];
+
+        return text;
+    }
+
+
     private class GroqNutritionResponse
     {
         public int Calories { get; set; }
@@ -153,17 +170,18 @@ public class AiService : IAiService
 
         return await SendMessageAsync(prompt);
     }
-    
-    private async Task<string> SendMessageAsync(string prompt)
+
+    private async Task<string> SendMessageAsync(string prompt, double temperature = 0.7, int? maxTokens = null)
     {
         var requestBody = new
         {
             model = _model,
             messages = new[]
             {
-                new { role = "user", content = prompt }
-            },
-            temperature = 0.7
+            new { role = "user", content = prompt }
+        },
+            temperature,
+            max_tokens = maxTokens
         };
 
         var json = JsonSerializer.Serialize(requestBody);

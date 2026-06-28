@@ -1,0 +1,209 @@
+﻿@page "/history"
+@attribute [Authorize]
+@rendermode InteractiveServer
+@inherits RequireProfile
+@using NutriGuide.Application.DTOs.MealLog
+@using NutriGuide.Application.Interfaces
+@inject IMealLogService MealLogService
+
+<PageTitle>History</PageTitle>
+
+<h1>History</h1>
+<p class="text-muted">Browse what you've logged on any day. Days with meals are marked.</p>
+
+@if (!ProfileReady)
+{
+    <p><em>Loading…</em></p>
+}
+else
+{
+    <div class="d-flex" style="gap: 2rem; flex-wrap: wrap;">
+
+        <div class="card" style="width: 340px;">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <button class="btn btn-sm btn-outline-secondary" @onclick="PrevMonth">‹</button>
+                    <strong>@currentMonth.ToString("MMMM yyyy")</strong>
+                    <button class="btn btn-sm btn-outline-secondary" @onclick="NextMonth">›</button>
+                </div>
+
+                <div class="calendar-grid">
+                    @foreach (var dayName in new[] { "Mo", "Tu", "We", "Th", "Fr", "Sa", "Su" })
+                    {
+                        <div class="calendar-head">@dayName</div>
+                    }
+
+                    @for (var i = 0; i < leadingBlanks; i++)
+                    {
+                        <div></div>
+                    }
+
+                    @for (var day = 1; day <= daysInMonth; day++)
+                    {
+                        var date = new DateOnly(currentMonth.Year, currentMonth.Month, day);
+                        var hasMeals = loggedDates.Contains(date);
+                        var isSelected = date == selectedDate;
+                        var isFuture = date > DateOnly.FromDateTime(DateTime.UtcNow);
+
+                        <button class="calendar-day @(isSelected ? "selected" : "") @(hasMeals ? "has-meals" : "")"
+                                disabled="@isFuture"
+                                @onclick="() => SelectDate(date)">
+                            @day
+                        </button>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <div style="flex: 1; min-width: 300px;">
+            @if (selectedDate is null)
+            {
+                <p class="text-muted">Select a day to see its meals.</p>
+            }
+            else if (daySummary is null)
+            {
+                <p><em>Loading…</em></p>
+            }
+            else
+            {
+                <h2 class="h5">@selectedDate.Value.ToString("dddd, d MMMM yyyy")</h2>
+
+                @if (daySummary.Meals.Count == 0)
+                {
+                    <p>Nothing logged on this day.</p>
+                }
+                else
+                {
+                    <p class="text-muted small">
+                        @daySummary.TotalCalories kcal · Protein @daySummary.TotalProtein_g g ·
+                        Carbs @daySummary.TotalCarbs_g g · Fat @daySummary.TotalFat_g g ·
+                        Fiber @daySummary.TotalFiber_g g
+                    </p>
+
+                    <table class="table">
+                        <thead>
+                            <tr><th>Meal</th><th>Calories</th><th>Protein</th><th>Carbs</th><th>Fat</th></tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var meal in daySummary.Meals)
+                            {
+                                <tr>
+                                    <td>@meal.RawInput</td>
+                                    <td>@meal.Calories</td>
+                                    <td>@meal.Protein_g g</td>
+                                    <td>@meal.Carbs_g g</td>
+                                    <td>@meal.Fat_g g</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                }
+            }
+        </div>
+    </div>
+}
+
+<style>
+    .calendar-grid {
+        display: grid;
+        grid-template-columns: repeat(7, 1fr);
+        gap: 4px;
+    }
+
+    .calendar-head {
+        text-align: center;
+        font-size: 0.7rem;
+        color: #888;
+        padding: 4px 0;
+    }
+
+    .calendar-day {
+        aspect-ratio: 1;
+        border: 1px solid #dee2e6;
+        background: #fff;
+        border-radius: 6px;
+        cursor: pointer;
+        font-size: 0.85rem;
+        position: relative;
+    }
+
+        .calendar-day:hover:not(:disabled) {
+            background: #f1f3f5;
+        }
+
+        .calendar-day:disabled {
+            color: #ccc;
+            cursor: default;
+            background: #fafafa;
+        }
+
+        .calendar-day.has-meals {
+            font-weight: 600;
+        }
+
+            .calendar-day.has-meals::after {
+                content: "";
+                position: absolute;
+                bottom: 4px;
+                left: 50%;
+                transform: translateX(-50%);
+                width: 5px;
+                height: 5px;
+                border-radius: 50%;
+                background: #198754;
+            }
+
+        .calendar-day.selected {
+            background: #198754;
+            color: #fff;
+            border-color: #198754;
+        }
+
+            .calendar-day.selected.has-meals::after {
+                background: #fff;
+            }
+</style>
+
+@code {
+    private DateOnly currentMonth = new(DateTime.UtcNow.Year, DateTime.UtcNow.Month, 1);
+    private DateOnly? selectedDate;
+    private DailyMealSummaryDto? daySummary;
+    private HashSet<DateOnly> loggedDates = new();
+
+    private int daysInMonth => DateTime.DaysInMonth(currentMonth.Year, currentMonth.Month);
+    private int leadingBlanks =>
+        ((int)new DateTime(currentMonth.Year, currentMonth.Month, 1).DayOfWeek + 6) % 7; // Monday-first
+
+    protected override async Task OnProfileReadyAsync()
+    {
+        await LoadMonthAsync();
+    }
+
+    private async Task LoadMonthAsync()
+    {
+        if (UserId is null) return;
+        var first = currentMonth;
+        var last = new DateOnly(currentMonth.Year, currentMonth.Month, daysInMonth);
+        loggedDates = await MealLogService.GetLoggedDatesAsync(UserId, first, last);
+    }
+
+    private async Task PrevMonth()
+    {
+        currentMonth = currentMonth.AddMonths(-1);
+        await LoadMonthAsync();
+    }
+
+    private async Task NextMonth()
+    {
+        currentMonth = currentMonth.AddMonths(1);
+        await LoadMonthAsync();
+    }
+
+    private async Task SelectDate(DateOnly date)
+    {
+        if (UserId is null) return;
+        selectedDate = date;
+        daySummary = null;
+        daySummary = await MealLogService.GetByDateAsync(UserId, date);
+    }
+}

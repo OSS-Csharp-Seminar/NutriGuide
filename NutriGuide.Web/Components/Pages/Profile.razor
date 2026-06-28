@@ -1,0 +1,200 @@
+﻿@page "/profile"
+@attribute [Authorize]
+@rendermode InteractiveServer
+@using System.Security.Claims
+@using System.ComponentModel.DataAnnotations
+@using NutriGuide.Application.DTOs.UserProfile
+@using NutriGuide.Application.Interfaces
+@using NutriGuide.Domain.Enums
+@inject IUserProfileService ProfileService
+@inject IDailyTargetService TargetService
+@inject AuthenticationStateProvider AuthProvider
+
+<PageTitle>Your profile</PageTitle>
+
+<h1>Your profile</h1>
+<p class="text-muted">
+    @(isEditMode
+        ? "Update your details — your daily targets recalculate when you save."
+        : "Tell us about yourself so we can calculate your daily nutrition targets.")
+</p>
+
+@if (model is null)
+{
+    <p><em>Loading…</em></p>
+}
+else
+{
+    <EditForm Model="model" OnValidSubmit="SaveAsync" style="max-width: 480px;">
+        <DataAnnotationsValidator />
+
+        <div class="mb-3">
+            <label class="form-label">Gender</label>
+            <InputSelect class="form-select" @bind-Value="model.Gender">
+                @foreach (var g in Enum.GetValues<Gender>())
+                {
+                    <option value="@g">@g</option>
+                }
+            </InputSelect>
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">Age</label>
+            <InputNumber class="form-control" @bind-Value="model.Age" />
+            <ValidationMessage For="() => model.Age" class="text-danger small" />
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">Height (cm)</label>
+            <InputNumber class="form-control" @bind-Value="model.Height_cm" />
+            <ValidationMessage For="() => model.Height_cm" class="text-danger small" />
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">Weight (kg)</label>
+            <InputNumber class="form-control" @bind-Value="model.Weight_kg" />
+            <ValidationMessage For="() => model.Weight_kg" class="text-danger small" />
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">Activity level</label>
+            <InputSelect class="form-select" @bind-Value="model.ActivityLevel">
+                @foreach (var a in Enum.GetValues<ActivityLevel>())
+                {
+                    <option value="@a">@a</option>
+                }
+            </InputSelect>
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">Goal</label>
+            <InputSelect class="form-select" @bind-Value="model.Goal">
+                @foreach (var goal in Enum.GetValues<Goal>())
+                {
+                    <option value="@goal">@goal</option>
+                }
+            </InputSelect>
+        </div>
+
+        <button class="btn btn-primary" type="submit" disabled="@isBusy">
+            @(isBusy ? "Saving…" : (isEditMode ? "Save changes" : "Create profile"))
+        </button>
+    </EditForm>
+
+    @if (savedMessage is not null)
+    {
+        <div class="alert alert-success mt-3">@savedMessage</div>
+    }
+    @if (error is not null)
+    {
+        <div class="alert alert-danger mt-3">@error</div>
+    }
+}
+
+@code {
+    private string? userId;
+    private ProfileFormModel? model;
+    private bool isEditMode;
+    private bool isBusy;
+    private string? savedMessage;
+    private string? error;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var state = await AuthProvider.GetAuthenticationStateAsync();
+        userId = state.User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (userId is null) return;
+
+        if (await ProfileService.ProfileExistsAsync(userId))
+        {
+            var existing = await ProfileService.GetByUserIdAsync(userId);
+            isEditMode = true;
+            model = new ProfileFormModel
+            {
+                Gender = existing.Gender,
+                Age = existing.Age,
+                Height_cm = existing.Height_cm,
+                Weight_kg = existing.Weight_kg,
+                ActivityLevel = existing.ActivityLevel,
+                Goal = existing.Goal
+            };
+        }
+        else
+        {
+            isEditMode = false;
+            model = new ProfileFormModel
+            {
+                Age = 25,
+                Height_cm = 175,
+                Weight_kg = 70
+            };
+        }
+    }
+
+    private async Task SaveAsync()
+    {
+        if (userId is null || model is null || isBusy) return;
+        isBusy = true;
+        error = null;
+        savedMessage = null;
+        try
+        {
+            if (isEditMode)
+            {
+                await ProfileService.UpdateAsync(userId, new UpdateUserProfileDto
+                {
+                    Age = model.Age,
+                    Height_cm = model.Height_cm,
+                    Weight_kg = model.Weight_kg,
+                    ActivityLevel = model.ActivityLevel,
+                    Goal = model.Goal
+                });
+            }
+            else
+            {
+                await ProfileService.CreateAsync(userId, new CreateUserProfileDto
+                {
+                    Gender = model.Gender,
+                    Age = model.Age,
+                    Height_cm = model.Height_cm,
+                    Weight_kg = model.Weight_kg,
+                    ActivityLevel = model.ActivityLevel,
+                    Goal = model.Goal
+                });
+                isEditMode = true;
+            }
+
+            // Keep daily targets in sync with the new profile data
+            await TargetService.RegenerateAsync(userId);
+
+            savedMessage = "Profile saved and your daily targets have been updated.";
+        }
+        catch (Exception ex)
+        {
+            error = ex.Message;
+        }
+        finally
+        {
+            isBusy = false;
+        }
+    }
+
+    // Form-bound view model so one form serves both create and edit,
+    // carrying the same Range rules as the DTOs for friendly validation.
+    public class ProfileFormModel
+    {
+        public Gender Gender { get; set; } = Gender.Male;
+
+        [Range(13, 120, ErrorMessage = "Age must be between 13 and 120.")]
+        public int Age { get; set; }
+
+        [Range(50, 251, ErrorMessage = "Height must be between 50 and 251 cm.")]
+        public decimal Height_cm { get; set; }
+
+        [Range(20, 450, ErrorMessage = "Weight must be between 20 and 450 kg.")]
+        public decimal Weight_kg { get; set; }
+
+        public ActivityLevel ActivityLevel { get; set; } = ActivityLevel.Moderate;
+        public Goal Goal { get; set; } = Goal.Maintenance;
+    }
+}

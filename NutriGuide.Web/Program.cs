@@ -9,12 +9,16 @@ using NutriGuide.Infrastructure.Data;
 using NutriGuide.Infrastructure.Services;
 using NutriGuide.Web.Components;
 using NutriGuide.Web.Middleware;
+using Microsoft.AspNetCore.Components.Authorization;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Blazor
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
+
+builder.Services.AddCascadingAuthenticationState();
+builder.Services.AddScoped<AuthenticationStateProvider, global::NutriGuide.Web.RevalidatingIdentityAuthenticationStateProvider>();
 
 // DbContext
 builder.Services.AddDbContext<AppDbContext>(options =>
@@ -35,11 +39,7 @@ builder.Services.AddIdentity<IdentityUser, IdentityRole>(options =>
 var jwtSettings = builder.Configuration.GetSection("JwtSettings");
 var key = Encoding.UTF8.GetBytes(jwtSettings["Secret"]!);
 
-builder.Services.AddAuthentication(options =>
-{
-    options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
-    options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
-})
+builder.Services.AddAuthentication()
 .AddJwtBearer(options =>
 {
     options.TokenValidationParameters = new TokenValidationParameters
@@ -95,6 +95,14 @@ builder.Services.AddScoped<IDailyTargetService, DailyTargetService>();
 builder.Services.AddHttpClient<IAiService, AiService>();
 builder.Services.AddScoped<IMealLogService, MealLogService>();
 builder.Services.AddScoped<IAiRecommendationService, AiRecommendationService>();
+builder.Services.AddScoped<IFavoriteMealService, FavoriteMealService>();
+
+builder.Services.ConfigureApplicationCookie(options =>
+{
+    options.LoginPath = "/login";
+    options.LogoutPath = "/logout";
+    options.AccessDeniedPath = "/login";
+});
 
 var app = builder.Build();
 
@@ -111,6 +119,7 @@ app.UseSwaggerUI();
 app.UseAuthentication();
 app.UseAuthorization();
 app.UseAntiforgery();
+app.MapStaticAssets();
 app.MapControllers();
 app.MapRazorComponents<App>()
     .AddInteractiveServerRenderMode();

@@ -1,5 +1,8 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 18
+VisualStudioVersion = 18.7.11919.86 stable
+MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NutriGuide.Domain", "NutriGuide.Domain\NutriGuide.Domain.csproj", "{F4DEB7EC-7435-4DFA-A73A-D0529CF83E4D}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NutriGuide.Application", "NutriGuide.Application\NutriGuide.Application.csproj", "{EB7D5BC6-EED6-4119-9FD6-C8B2CB160657}"
@@ -31,13 +34,15 @@ Global
 		{9E0A6E6E-ADCC-45C6-885C-ADCDAEC5C6BE}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{9E0A6E6E-ADCC-45C6-885C-ADCDAEC5C6BE}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{9E0A6E6E-ADCC-45C6-885C-ADCDAEC5C6BE}.Release|Any CPU.Build.0 = Release|Any CPU
-		{5938E3B0-C8E3-4D9D-A502-62265714333B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{5938E3B0-C8E3-4D9D-A502-62265714333B}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{5938E3B0-C8E3-4D9D-A502-62265714333B}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{5938E3B0-C8E3-4D9D-A502-62265714333B}.Release|Any CPU.Build.0 = Release|Any CPU
 		{9A81F0D7-AAEE-477F-B178-E66D3F619914}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{9A81F0D7-AAEE-477F-B178-E66D3F619914}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{9A81F0D7-AAEE-477F-B178-E66D3F619914}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{9A81F0D7-AAEE-477F-B178-E66D3F619914}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {8671B41E-A09A-4629-A20F-87E743B5E23A}
 	EndGlobalSection
 EndGlobal

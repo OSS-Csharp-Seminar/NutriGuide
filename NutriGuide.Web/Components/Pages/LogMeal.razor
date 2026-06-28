@@ -1,0 +1,306 @@
+﻿@page "/log-meal"
+@attribute [Authorize]
+@rendermode InteractiveServer
+@inherits RequireProfile
+@using NutriGuide.Application.DTOs.MealLog
+@using NutriGuide.Application.DTOs.DailyTarget
+@using NutriGuide.Application.Interfaces
+@inject IMealLogService MealLogService
+@inject IDailyTargetService TargetService
+@using NutriGuide.Application.DTOs.AiRecommendation
+@inject IAiRecommendationService RecommendationService
+@using NutriGuide.Application.DTOs.FavoriteMeal
+@inject IFavoriteMealService FavoriteService
+
+<PageTitle>Log a meal</PageTitle>
+
+<h1>Log a meal</h1>
+<p class="text-muted">Describe what you ate in plain words — the AI estimates the nutrition.</p>
+
+@if (!ProfileReady || summary is null || target is null)
+{
+    <p><em>Loading…</em></p>
+}
+else
+{
+    <div class="card mb-4" style="max-width: 540px;">
+        <div class="card-body">
+            <h2 class="h5 mb-3">Today's progress</h2>
+            @ProgressRow("Calories", summary.TotalCalories, target.Calories, "kcal")
+            @ProgressRow("Protein", (double)summary.TotalProtein_g, (double)target.Protein_g, "g")
+            @ProgressRow("Carbs", (double)summary.TotalCarbs_g, (double)target.Carbs_g, "g")
+            @ProgressRow("Fat", (double)summary.TotalFat_g, (double)target.Fat_g, "g")
+            @ProgressRow("Fiber", (double)summary.TotalFiber_g, (double)target.Fiber_g, "g")
+        </div>
+    </div>
+
+    <div class="card mb-4" style="max-width: 540px;">
+        <div class="card-body">
+            <h2 class="h5 mb-1">Ask the AI</h2>
+            <p class="text-muted small mb-3">Get a suggestion based on what you've eaten today.</p>
+
+            @if (CaloriesMet)
+            {
+                <div class="alert alert-success mb-0">
+                    You've hit your calorie goal for today — nicely done. You can still log anything else you eat below.
+                </div>
+            }
+            else
+            {
+                <div class="d-flex gap-2 flex-wrap">
+                    <button class="btn btn-outline-primary btn-sm"
+                            @onclick="SuggestNextMeal" disabled="@isRecommending">
+                        @(isRecommending && lastTrigger == "next" ? "Thinking…" : "Suggest my next meal")
+                    </button>
+                    <button class="btn btn-outline-primary btn-sm"
+                            @onclick="SuggestTargetMiss" disabled="@isRecommending">
+                        @(isRecommending && lastTrigger == "miss" ? "Thinking…" : "Help me hit my targets")
+                    </button>
+                </div>
+            }
+
+            @if (recommendation is not null && !CaloriesMet)
+            {
+                <div class="alert alert-info mt-3 mb-0">
+                    @recommendation.RecommendationText
+                </div>
+            }
+            @if (recommendError is not null)
+            {
+                <div class="text-danger mt-2 small">@recommendError</div>
+            }
+        </div>
+    </div>
+
+    <div class="mb-4" style="max-width: 540px;">
+        <div class="input-group">
+            <input class="form-control" placeholder="e.g. 2 bananas and a large yogurt"
+                   @bind="rawInput" @bind:event="oninput" disabled="@isBusy" />
+            <button class="btn btn-primary" @onclick="LogAsync"
+                    disabled="@(isBusy || string.IsNullOrWhiteSpace(rawInput))">
+                @(isBusy ? "Estimating…" : "Log meal")
+            </button>
+        </div>
+        @if (error is not null)
+        {
+            <div class="text-danger mt-2">@error</div>
+        }
+    </div>
+
+    @if (favorites.Count > 0)
+    {
+        <div class="mb-4" style="max-width: 540px;">
+            <h2 class="h6">Quick log a favorite</h2>
+            <div class="d-flex flex-wrap gap-2">
+                @foreach (var fav in favorites)
+                {
+                    <div class="btn-group">
+                        <button class="btn btn-sm btn-success"
+                                @onclick="() => LogFavorite(fav.Id)" disabled="@isBusy"
+                                title="@($"{fav.Calories} kcal")">
+                            @fav.Name
+                        </button>
+                        <button class="btn btn-sm btn-outline-danger"
+                                @onclick="() => RemoveFavorite(fav.Id)" disabled="@isBusy"
+                                title="Remove from favorites">
+                            ×
+                        </button>
+                    </div>
+                }
+            </div>
+        </div>
+    }
+
+    @if (summary.Meals.Count == 0)
+    {
+        <p>No meals logged yet today. Add your first one above.</p>
+    }
+    else
+    {
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Meal</th>
+                    <th>Calories</th>
+                    <th>Protein</th>
+                    <th>Carbs</th>
+                    <th>Fat</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var meal in summary.Meals)
+                {
+                    <tr>
+                        <td>
+                            @meal.RawInput
+                            @if (!string.IsNullOrWhiteSpace(meal.AiNote))
+                            {
+                                <div class="text-muted small">@meal.AiNote</div>
+                            }
+                        </td>
+                        <td>@meal.Calories</td>
+                        <td>@meal.Protein_g g</td>
+                        <td>@meal.Carbs_g g</td>
+                        <td>@meal.Fat_g g</td>
+                        <td>
+                            <button class="btn btn-sm btn-outline-secondary me-1"
+                                    @onclick="() => SaveFavorite(meal.Id)" disabled="@isBusy">
+                                ☆ Save
+                            </button>
+                            <button class="btn btn-sm btn-outline-danger"
+                                    @onclick="() => DeleteAsync(meal.Id)" disabled="@isBusy">
+                                Remove
+                            </button>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+}
+
+@code {
+    private string rawInput = string.Empty;
+    private DailyMealSummaryDto? summary;
+    private DailyTargetDto? target;
+    private bool isBusy;
+    private string? error;
+    private AiRecommendationDto? recommendation;
+    private bool isRecommending;
+    private string? recommendError;
+    private string? lastTrigger;
+    private List<FavoriteMealDto> favorites = new();
+    private bool CaloriesMet =>
+        summary is not null && target is not null && summary.TotalCalories >= target.Calories;
+
+    protected override async Task OnProfileReadyAsync()
+    {
+        await LoadAsync();
+    }
+
+    private async Task LoadAsync()
+    {
+        if (UserId is null) return;
+        summary = await MealLogService.GetTodayAsync(UserId);
+        target = await TargetService.GetOrCreateTodayAsync(UserId);
+        favorites = await FavoriteService.GetAllAsync(UserId);
+    }
+
+    private async Task LogAsync()
+    {
+        if (UserId is null || string.IsNullOrWhiteSpace(rawInput) || isBusy) return;
+        isBusy = true;
+        error = null;
+        try
+        {
+            await MealLogService.CreateAsync(UserId, new CreateMealLogDto { RawInput = rawInput.Trim() });
+            rawInput = string.Empty;
+            await LoadAsync();
+        }
+        catch (Exception ex) { error = ex.Message; }
+        finally { isBusy = false; }
+    }
+
+    private async Task DeleteAsync(Guid id)
+    {
+        if (UserId is null || isBusy) return;
+        isBusy = true;
+        error = null;
+        try
+        {
+            await MealLogService.DeleteAsync(UserId, id);
+            await LoadAsync();
+        }
+        catch (Exception ex) { error = ex.Message; }
+        finally { isBusy = false; }
+    }
+
+    private async Task SaveFavorite(Guid mealId)
+    {
+        if (UserId is null || isBusy) return;
+        isBusy = true;
+        error = null;
+        try
+        {
+            await FavoriteService.SaveFromMealAsync(UserId, mealId);
+            await LoadAsync();
+        }
+        catch (Exception ex) { error = ex.Message; }
+        finally { isBusy = false; }
+    }
+
+    private async Task LogFavorite(Guid favoriteId)
+    {
+        if (UserId is null || isBusy) return;
+        isBusy = true;
+        error = null;
+        try
+        {
+            await FavoriteService.LogFromFavoriteAsync(UserId, favoriteId);
+            await LoadAsync();
+        }
+        catch (Exception ex) { error = ex.Message; }
+        finally { isBusy = false; }
+    }
+
+    private async Task RemoveFavorite(Guid favoriteId)
+    {
+        if (UserId is null || isBusy) return;
+        isBusy = true;
+        error = null;
+        try
+        {
+            await FavoriteService.DeleteAsync(UserId, favoriteId);
+            await LoadAsync();
+        }
+        catch (Exception ex) { error = ex.Message; }
+        finally { isBusy = false; }
+    }
+
+    private async Task SuggestNextMeal()
+    {
+        if (UserId is null || isRecommending) return;
+        isRecommending = true;
+        lastTrigger = "next";
+        recommendError = null;
+        recommendation = null;
+        try
+        {
+            recommendation = await RecommendationService.GenerateNextMealAsync(UserId);
+        }
+        catch (Exception ex) { recommendError = ex.Message; }
+        finally { isRecommending = false; }
+    }
+
+    private async Task SuggestTargetMiss()
+    {
+        if (UserId is null || isRecommending) return;
+        isRecommending = true;
+        lastTrigger = "miss";
+        recommendError = null;
+        recommendation = null;
+        try
+        {
+            recommendation = await RecommendationService.GenerateTargetMissAsync(UserId);
+        }
+        catch (Exception ex) { recommendError = ex.Message; }
+        finally { isRecommending = false; }
+    }
+
+    private RenderFragment ProgressRow(string label, double consumed, double goal, string unit) => __builder =>
+    {
+        var pct = goal > 0 ? Math.Min(100, consumed / goal * 100) : 0;
+        var over = goal > 0 && consumed > goal;
+        <div class="mb-2">
+            <div class="d-flex justify-content-between small">
+                <span>@label</span>
+                <span class="text-muted">@Math.Round(consumed) / @Math.Round(goal) @unit</span>
+            </div>
+            <div class="progress" style="height: 8px;">
+                <div class="progress-bar @(over ? "bg-warning" : "bg-success")"
+                     role="progressbar" style="width: @pct.ToString("0")%;"></div>
+            </div>
+        </div>
+    };
+}

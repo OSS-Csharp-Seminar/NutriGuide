@@ -86,14 +86,15 @@ public class MealLogService : IMealLogService
         if (mealLog == null)
             throw new KeyNotFoundException("Meal not found.");
 
-        _context.MealLogs.Remove(mealLog);
-        
-        await RecalculateDailyNutritionSummaryAsync(userId,
-            DateOnly.FromDateTime(mealLog.LoggedAt));
+        var mealDate = DateOnly.FromDateTime(mealLog.LoggedAt);
 
+        _context.MealLogs.Remove(mealLog);
+        await _context.SaveChangesAsync();
+
+        await RecalculateDailyNutritionSummaryAsync(userId, mealDate);
         await _context.SaveChangesAsync();
     }
-    
+
 
     private async Task UpdateDailyNutritionSummaryAsync(string userId, MealLog newMeal)
     {
@@ -141,6 +142,21 @@ public class MealLogService : IMealLogService
         summary.TotalFiber_g = meals.Sum(m => m.Fiber_g ?? 0);
         summary.MealCount = meals.Count;
         summary.UpdatedAt = DateTime.UtcNow;
+    }
+
+    public async Task<HashSet<DateOnly>> GetLoggedDatesAsync(string userId, DateOnly from, DateOnly to)
+    {
+        var fromDt = DateTime.SpecifyKind(from.ToDateTime(TimeOnly.MinValue), DateTimeKind.Utc);
+        var toDt = DateTime.SpecifyKind(to.AddDays(1).ToDateTime(TimeOnly.MinValue), DateTimeKind.Utc);
+
+        var dates = await _context.MealLogs
+            .Where(ml => ml.UserId == userId &&
+                         ml.LoggedAt >= fromDt &&
+                         ml.LoggedAt < toDt)
+            .Select(ml => ml.LoggedAt)
+            .ToListAsync();
+
+        return dates.Select(DateOnly.FromDateTime).ToHashSet();
     }
 
     private static MealLogDto MapToDto(MealLog meal) => new()
