@@ -1,9 +1,10 @@
-﻿using System.Text;
-using System.Text.Json;
-using Microsoft.Extensions.Configuration;
+﻿using Microsoft.Extensions.Configuration;
 using NutriGuide.Application.DTOs.Ai;
+using NutriGuide.Application.DTOs.WeeklyReport;
 using NutriGuide.Application.Interfaces;
 using NutriGuide.Domain.Models;
+using System.Text;
+using System.Text.Json;
 
 
 namespace NutriGuide.Infrastructure.Services;
@@ -228,7 +229,15 @@ public class AiService : IAiService
 
                       Meals in the last 48 hours: {mealsDescription}
 
-                      Analyze the possible nutritional connection to the symptoms and suggest a specific meal.
+                      Guidelines for your analysis:
+                      - First judge whether the recent meals look balanced and adequate. 
+                        If they do, say so plainly and note that the symptoms may not be diet-related. 
+                        Do NOT invent a nutritional cause when none is evident.
+                      - Only point to a nutritional factor if there is a clear, well-established link. Avoid speculative or obscure mechanisms.
+                      - Be honest rather than reassuring or alarming.
+
+                      Then suggest one realistic meal or snack that could genuinely help — it must include actual food, not only a drink.
+
                       Respond ONLY with a valid JSON object, no explanation, no markdown, no extra text.
 
                       {jsonStructure}
@@ -237,13 +246,42 @@ public class AiService : IAiService
                       """;
 
         var responseText = await SendMessageAsync(prompt);
+        var cleaned = ExtractJson(responseText);
 
-        var result = JsonSerializer.Deserialize<WellnessAnalysisResult>(responseText,
-            new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+        WellnessAnalysisResult? result;
+        try
+        {
+            result = JsonSerializer.Deserialize<WellnessAnalysisResult>(cleaned,
+                new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+        }
+        catch (JsonException)
+        {
+            throw new InvalidOperationException("AI returned data that could not be read. Please try again.");
+        }
 
         if (result == null)
-            throw new InvalidOperationException("AI nije vratio ispravne podatke.");
+            throw new InvalidOperationException("AI returned invalid data.");
 
         return result;
+    }
+
+    public async Task<string> GenerateWeeklySummaryAsync(WeeklyReportDto report)
+    {
+        var weightLine = report.ThisWeekWeight_kg is not null && report.WeightChange_kg is not null
+            ? $"Weight: {report.ThisWeekWeight_kg} kg ({(report.WeightChange_kg >= 0 ? "+" : "")}{report.WeightChange_kg} kg since start). Goal: {report.Goal}."
+            : "No weight recorded this week.";
+
+        var prompt = $"""
+                      You are a supportive nutrition coach summarizing a user's week. Use only the figures provided — do not invent numbers.
+
+                      Days with logged meals: {report.DaysLogged}
+                      Daily averages: {report.AvgCalories} kcal, protein {report.AvgProtein_g}g, carbs {report.AvgCarbs_g}g, fat {report.AvgFat_g}g, fiber {report.AvgFiber_g}g.
+                      Calorie target: {report.TargetCalories} kcal/day (averaged {report.CalorieAdherence_pct}% of target).
+                      {weightLine}
+
+                      Write a short, encouraging summary of the week in 2-4 sentences. Mention how close they were to their calorie target, one nutritional strength or area to improve, and whether their weight trend fits their goal. Be honest but constructive. Respond in English, plain text only.
+                      """;
+
+        return await SendMessageAsync(prompt);
     }
 }
