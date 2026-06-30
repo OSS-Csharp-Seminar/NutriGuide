@@ -30,7 +30,6 @@ public class AppDbContext : IdentityDbContext<IdentityUser>
         builder.Entity<MealLogFavorite>()
             .HasKey(mlf => new { mlf.MealLogId, mlf.FavoriteMealId });
 
-       
         builder.Entity<MealLogFavorite>()
             .HasOne(mlf => mlf.MealLog)
             .WithMany(ml => ml.MealLogFavorites)
