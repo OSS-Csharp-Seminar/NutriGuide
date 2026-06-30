@@ -15,6 +15,10 @@
 <PageTitle>Your profile</PageTitle>
 
 <h1>Your profile</h1>
+@if (userName is not null)
+{
+    <p class="h5 text-muted mb-1">Signed in as <strong class="text-dark">@userName</strong></p>
+}
 <p class="text-muted">
     @(isEditMode
         ? "Update your details — your daily targets recalculate when you save."
@@ -142,6 +146,12 @@ else
         {
             <div class="alert alert-danger mt-3">@discordError</div>
         }
+
+        <hr class="my-4" style="max-width: 480px;" />
+        <form method="post" action="/Account/logout" style="max-width: 480px;">
+            <AntiforgeryToken />
+            <button class="btn btn-outline-danger" type="submit">Log out</button>
+        </form>
     </section>
 }
 
@@ -158,11 +168,13 @@ else
     private string? discordLinkCommand;
     private string? discordMessage;
     private string? discordError;
+    private string? userName;
 
     protected override async Task OnInitializedAsync()
     {
         var state = await AuthProvider.GetAuthenticationStateAsync();
         userId = state.User.FindFirstValue(ClaimTypes.NameIdentifier);
+        userName = state.User.Identity?.Name;
         if (userId is null) return;
 
         if (await ProfileService.ProfileExistsAsync(userId))
