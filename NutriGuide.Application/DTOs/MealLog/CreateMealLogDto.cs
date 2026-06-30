@@ -10,4 +10,5 @@ public class CreateMealLogDto
     public string RawInput { get; set; } = string.Empty;
 
     public MealType? MealType { get; set; }
+    public MealSource? Source { get; set; }
 }

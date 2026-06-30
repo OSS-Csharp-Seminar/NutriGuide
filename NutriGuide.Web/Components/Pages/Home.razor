@@ -1,15 +1,743 @@
-﻿@page "/"
+@page "/"
 @attribute [Authorize]
+@rendermode InteractiveServer
+@inherits RequireProfile
+@using NutriGuide.Application.DTOs.AiRecommendation
+@using NutriGuide.Application.DTOs.DailyTarget
+@using NutriGuide.Application.DTOs.FavoriteMeal
+@using NutriGuide.Application.DTOs.MealLog
+@using NutriGuide.Application.DTOs.WeeklyReport
+@using NutriGuide.Application.Interfaces
+@inject IMealLogService MealLogService
+@inject IDailyTargetService TargetService
+@inject IAiRecommendationService RecommendationService
+@inject IFavoriteMealService FavoriteService
+@inject IWeeklyReportService WeeklyReportService
+@inject IJSRuntime JS
 
-<PageTitle>Home</PageTitle>
+<PageTitle>Dashboard</PageTitle>
 
-<AuthorizeView>
-    <Authorized>
-        <h1>Welcome, @context.User.Identity?.Name 👋</h1>
-        <p>You're logged in as @context.User.FindFirst(System.Security.Claims.ClaimTypes.Email)?.Value</p>
-        <form method="post" action="/Account/logout">
-            <AntiforgeryToken />
-            <button class="btn btn-secondary" type="submit">Log out</button>
-        </form>
-    </Authorized>
-</AuthorizeView>
+@if (!ProfileReady || summary is null || target is null || weeklyReport is null)
+{
+    <section class="dashboard-shell">
+        <div class="dashboard-loading">
+            <div class="loading-orb"></div>
+            <p><em>Preparing your nutrition dashboard...</em></p>
+        </div>
+    </section>
+}
+else
+{
+    <section class="dashboard-shell">
+        <div class="dashboard-hero">
+            <div>
+                <span class="dashboard-kicker">AI optimal nutrition</span>
+                <h1>Today's dashboard</h1>
+                <p>Track your targets, log meals fast, and let the AI nudge the next best choice.</p>
+            </div>
+            <div class="hero-score" aria-label="Daily target score">
+                <span>@DailyScore%</span>
+                <small>target score</small>
+            </div>
+        </div>
+
+        <div class="dashboard-tabs" role="tablist" aria-label="Dashboard views">
+            <button class="dashboard-tab @(activeTab == "overview" ? "active" : "")"
+                    role="tab" aria-selected="@(activeTab == "overview")"
+                    @onclick='() => SelectTab("overview")'>
+                Overview
+            </button>
+            <button class="dashboard-tab @(activeTab == "statistics" ? "active" : "")"
+                    role="tab" aria-selected="@(activeTab == "statistics")"
+                    @onclick='() => SelectTab("statistics")'>
+                Statistics
+            </button>
+        </div>
+
+        @if (activeTab == "overview")
+        {
+            <div class="dashboard-grid">
+                <article class="dash-card targets-card pop-in">
+                    <div class="card-heading">
+                        <div>
+                            <span class="eyebrow">Today</span>
+                            <h2>Targets</h2>
+                        </div>
+                        <span class="status-pill @(DailyScore >= 90 ? "success" : "attention")">
+                            @(DailyScore >= 90 ? "On pace" : "Needs balance")
+                        </span>
+                    </div>
+
+                    @foreach (var metric in Metrics)
+                    {
+                        <div class="target-row">
+                            <div class="target-row-top">
+                                <span>@metric.Label</span>
+                                <strong>@FormatNumber(metric.Consumed) / @FormatNumber(metric.Goal) @metric.Unit</strong>
+                            </div>
+                            <div class="target-track">
+                                <div class="target-fill @metric.ClassName"
+                                     style="width: @ProgressWidth(metric.Consumed, metric.Goal)%"></div>
+                            </div>
+                        </div>
+                    }
+                </article>
+
+                <article class="dash-card quick-log-card pop-in delay-1">
+                    <div class="card-heading">
+                        <div>
+                            <span class="eyebrow">Fast input</span>
+                            <h2>Quick meal logging</h2>
+                        </div>
+                    </div>
+
+                    <div class="quick-log-box">
+                        <input class="form-control"
+                               placeholder="e.g. Greek yogurt, banana, and oats"
+                               @bind="rawInput" @bind:event="oninput" disabled="@isBusy" />
+                        <button class="btn btn-primary" @onclick="LogAsync"
+                                disabled="@(isBusy || string.IsNullOrWhiteSpace(rawInput))">
+                            @(isBusy ? "Estimating..." : "Log")
+                        </button>
+                    </div>
+
+                    @if (favorites.Count > 0)
+                    {
+                        <div class="favorite-strip">
+                            @foreach (var fav in favorites.Take(5))
+                            {
+                                <button class="favorite-chip"
+                                        @onclick="() => LogFavorite(fav.Id)"
+                                        disabled="@isBusy"
+                                        title="@($"{fav.Calories} kcal")">
+                                    @fav.Name
+                                </button>
+                            }
+                        </div>
+                    }
+
+                    @if (error is not null)
+                    {
+                        <div class="text-danger small mt-2">@error</div>
+                    }
+                </article>
+
+                <article class="dash-card recommendation-card pop-in delay-2">
+                    <div class="card-heading">
+                        <div>
+                            <span class="eyebrow">AI coach</span>
+                            <h2>Next meal recommendation</h2>
+                        </div>
+                    </div>
+
+                    <div class="recommendation-body">
+                        @if (recommendation is null)
+                        {
+                            <p>@RecommendationPrompt</p>
+                        }
+                        else
+                        {
+                            <p>@recommendation.RecommendationText</p>
+                        }
+                    </div>
+
+                    <div class="d-flex gap-2 flex-wrap">
+                        <button class="btn btn-outline-primary btn-sm"
+                                @onclick="SuggestNextMeal" disabled="@isRecommending">
+                            @(isRecommending && lastTrigger == "next" ? "Thinking..." : "Suggest next meal")
+                        </button>
+                        <button class="btn btn-outline-primary btn-sm"
+                                @onclick="SuggestTargetMiss" disabled="@isRecommending">
+                            @(isRecommending && lastTrigger == "targets" ? "Thinking..." : "Hit my targets")
+                        </button>
+                    </div>
+
+                    @if (recommendError is not null)
+                    {
+                        <div class="text-danger small mt-2">@recommendError</div>
+                    }
+                </article>
+
+                <article class="dash-card streak-card pop-in delay-3">
+                    <div class="card-heading">
+                        <div>
+                            <span class="eyebrow">Consistency</span>
+                            <h2>Target streak</h2>
+                        </div>
+                        <span class="status-pill success">@LoggingStreak day@(LoggingStreak == 1 ? "" : "s")</span>
+                    </div>
+
+                    <div class="streak-stage">
+                        @foreach (var stage in StreakStages)
+                        {
+                            <div class="streak-avatar @(stage.Day <= StreakLevel ? "active" : "")"
+                                 style="--avatar-scale:@stage.Scale">
+                                <span>@stage.Icon</span>
+                                <small>@stage.Day</small>
+                            </div>
+                        }
+                    </div>
+
+                    <div class="fitness-level">
+                        <span class="fitness-person" style="--person-scale:@CurrentAvatarScale">@CurrentAvatar</span>
+                        <div>
+                            <strong>@StreakTitle</strong>
+                            <p>Keep logging and landing near your targets to power up the streak.</p>
+                        </div>
+                    </div>
+                </article>
+
+                <article class="dash-card meal-list-card pop-in delay-4">
+                    <div class="card-heading">
+                        <div>
+                            <span class="eyebrow">@summary.MealCount logged</span>
+                            <h2>Today's meal list</h2>
+                        </div>
+                    </div>
+
+                    @if (summary.Meals.Count == 0)
+                    {
+                        <div class="empty-meals">
+                            <strong>No meals yet today.</strong>
+                            <span>Start with the quick logger above and the dashboard will wake up.</span>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="meal-timeline">
+                            @foreach (var meal in summary.Meals.OrderByDescending(m => m.LoggedAt))
+                            {
+                                <div class="meal-item">
+                                    <div class="meal-dot"></div>
+                                    <div>
+                                        <div class="meal-title">
+                                            <strong>@meal.RawInput</strong>
+                                            <span>@meal.LoggedAt.ToLocalTime().ToString("HH:mm")</span>
+                                        </div>
+                                        <div class="meal-macros">
+                                            <span>@(meal.Calories ?? 0) kcal</span>
+                                            <span>@FormatNumber(meal.Protein_g ?? 0)g protein</span>
+                                            <span>@FormatNumber(meal.Carbs_g ?? 0)g carbs</span>
+                                            <span>@FormatNumber(meal.Fat_g ?? 0)g fat</span>
+                                        </div>
+                                        @if (!string.IsNullOrWhiteSpace(meal.AiNote))
+                                        {
+                                            <p>@meal.AiNote</p>
+                                        }
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    }
+                </article>
+
+                <article class="dash-card weekly-card pop-in delay-5">
+                    <div class="card-heading">
+                        <div>
+                            <span class="eyebrow">This week</span>
+                            <h2>Weekly progress</h2>
+                        </div>
+                    </div>
+
+                    <div class="weekly-stats">
+                        <div>
+                            <span>@weeklyReport.DaysLogged</span>
+                            <small>days logged</small>
+                        </div>
+                        <div>
+                            <span>@FormatNumber(weeklyReport.CalorieAdherence_pct)%</span>
+                            <small>calorie adherence</small>
+                        </div>
+                        <div>
+                            <span>@WeightChangeText</span>
+                            <small>weight change</small>
+                        </div>
+                    </div>
+
+                    <div class="weekly-progress-line">
+                        <span style="width:@ProgressWidth((double)weeklyReport.CalorieAdherence_pct, 100)%"></span>
+                    </div>
+
+                    <p class="weekly-note">@WeeklyStatusText</p>
+                </article>
+            </div>
+        }
+        else
+        {
+            <div class="stats-toolbar">
+                <div class="chart-tabs" role="tablist" aria-label="Statistics chart views">
+                    <button class="chart-tab @(statsMode == "balance" ? "active" : "")"
+                            role="tab" aria-selected="@(statsMode == "balance")"
+                            @onclick='() => SelectStatsMode("balance")'>
+                        Balance
+                    </button>
+                    <button class="chart-tab @(statsMode == "trends" ? "active" : "")"
+                            role="tab" aria-selected="@(statsMode == "trends")"
+                            @onclick='() => SelectStatsMode("trends")'>
+                        Trends
+                    </button>
+                </div>
+
+                <label class="range-picker">
+                    <span>Range</span>
+                    <select class="form-select" value="@statsRange" @onchange="ChangeStatsRange">
+                        <option value="today">Today</option>
+                        <option value="week">Last week</option>
+                        <option value="month">Last month</option>
+                        <option value="all">All time</option>
+                    </select>
+                </label>
+            </div>
+
+            @if (statsData.Count == 0)
+            {
+                <article class="dash-card empty-stats-card pop-in">
+                    <div class="empty-meals">
+                        <strong>No logged days in this range.</strong>
+                        <span>Choose another range or log a meal to unlock the charts.</span>
+                    </div>
+                </article>
+            }
+            else if (statsMode == "balance")
+            {
+                <div class="statistics-layout balance-layout">
+                    <article class="dash-card chart-card pop-in">
+                        <div class="card-heading">
+                            <div>
+                                <span class="eyebrow">@StatsRangeLabel</span>
+                                <h2>Calorie balance</h2>
+                            </div>
+                            <span class="status-pill">@statsData.Count logged day@(statsData.Count == 1 ? "" : "s")</span>
+                        </div>
+
+                        <div class="chart-wrap split-chart">
+                            <canvas id="calorieBalanceChart" aria-label="Recommended calories compared with consumed calories"></canvas>
+                        </div>
+                    </article>
+
+                    <article class="dash-card chart-card pop-in delay-1">
+                        <div class="card-heading">
+                            <div>
+                                <span class="eyebrow">@StatsRangeLabel</span>
+                                <h2>Macro balance</h2>
+                            </div>
+                            <span class="status-pill">grams</span>
+                        </div>
+
+                        <div class="chart-wrap split-chart">
+                            <canvas id="macroBalanceChart" aria-label="Recommended macros compared with consumed macros"></canvas>
+                        </div>
+                    </article>
+
+                    <article class="dash-card stats-summary-card pop-in delay-2">
+                        <div class="card-heading">
+                            <div>
+                                <span class="eyebrow">Range totals</span>
+                                <h2>Nutrition numbers</h2>
+                            </div>
+                        </div>
+
+                        <div class="stats-list">
+                            @foreach (var metric in StatsTotals)
+                            {
+                                <div>
+                                    <span>@metric.Label</span>
+                                    <strong>@FormatNumber(metric.Consumed) / @FormatNumber(metric.Goal) @metric.Unit</strong>
+                                </div>
+                            }
+                        </div>
+
+                        <p class="stats-note">Totals include only days with logged meals, so missed logging days do not drag the chart down.</p>
+                    </article>
+                </div>
+            }
+            else
+            {
+                <div class="statistics-layout trends-layout">
+                    <article class="dash-card chart-card pop-in">
+                        <div class="card-heading">
+                            <div>
+                                <span class="eyebrow">@StatsRangeLabel</span>
+                                <h2>Calories over time</h2>
+                            </div>
+                            <span class="status-pill">baseline included</span>
+                        </div>
+
+                        <div class="chart-wrap trend-chart">
+                            <canvas id="calorieTrendChart" aria-label="Calories over time with baseline calories"></canvas>
+                        </div>
+                    </article>
+
+                    <article class="dash-card chart-card pop-in delay-1">
+                        <div class="card-heading">
+                            <div>
+                                <span class="eyebrow">@StatsRangeLabel</span>
+                                <h2>Macros over time</h2>
+                            </div>
+                            <span class="status-pill">protein carbs fat fiber</span>
+                        </div>
+
+                        <div class="chart-wrap trend-chart">
+                            <canvas id="macroTrendChart" aria-label="Macros over time"></canvas>
+                        </div>
+                    </article>
+
+                    <article class="dash-card stats-summary-card pop-in delay-2">
+                        <div class="card-heading">
+                            <div>
+                                <span class="eyebrow">Averages</span>
+                                <h2>Logged-day averages</h2>
+                            </div>
+                        </div>
+
+                        <div class="stats-list">
+                            @foreach (var metric in StatsAverages)
+                            {
+                                <div>
+                                    <span>@metric.Label</span>
+                                    <strong>@FormatNumber(metric.Consumed) / @FormatNumber(metric.Goal) @metric.Unit</strong>
+                                </div>
+                            }
+                        </div>
+
+                        <p class="stats-note">The x-axis skips unlogged days and plots each day that has meal data.</p>
+                    </article>
+                </div>
+            }
+        }
+    </section>
+}
+
+@code {
+    private string activeTab = "overview";
+    private string statsMode = "balance";
+    private string statsRange = "today";
+    private string rawInput = string.Empty;
+    private DailyMealSummaryDto? summary;
+    private DailyTargetDto? target;
+    private WeeklyReportDto? weeklyReport;
+    private AiRecommendationDto? recommendation;
+    private List<FavoriteMealDto> favorites = new();
+    private List<DailyNutritionStatsDto> statsData = new();
+    private HashSet<DateOnly> loggedDates = new();
+    private bool isBusy;
+    private bool isRecommending;
+    private bool chartRendered;
+    private string? error;
+    private string? recommendError;
+    private string? lastTrigger;
+
+    private IReadOnlyList<NutritionMetric> Metrics => target is null || summary is null
+        ? Array.Empty<NutritionMetric>()
+        : new[]
+        {
+            new NutritionMetric("Calories", summary.TotalCalories, target.Calories, "kcal", "calories"),
+            new NutritionMetric("Protein", (double)summary.TotalProtein_g, (double)target.Protein_g, "g", "protein"),
+            new NutritionMetric("Carbs", (double)summary.TotalCarbs_g, (double)target.Carbs_g, "g", "carbs"),
+            new NutritionMetric("Fat", (double)summary.TotalFat_g, (double)target.Fat_g, "g", "fat"),
+            new NutritionMetric("Fiber", (double)summary.TotalFiber_g, (double)target.Fiber_g, "g", "fiber")
+        };
+
+    private int DailyScore => Metrics.Count == 0
+        ? 0
+        : (int)Math.Round(Metrics.Average(m => m.Goal <= 0 ? 0 : Math.Min(1, m.Consumed / m.Goal)) * 100);
+
+    private IReadOnlyList<NutritionMetric> StatsTotals => statsData.Count == 0
+        ? Array.Empty<NutritionMetric>()
+        : new[]
+        {
+            new NutritionMetric("Calories", statsData.Sum(d => d.Calories), statsData.Sum(d => d.TargetCalories), "kcal", "calories"),
+            new NutritionMetric("Protein", (double)statsData.Sum(d => d.Protein_g), (double)statsData.Sum(d => d.TargetProtein_g), "g", "protein"),
+            new NutritionMetric("Carbs", (double)statsData.Sum(d => d.Carbs_g), (double)statsData.Sum(d => d.TargetCarbs_g), "g", "carbs"),
+            new NutritionMetric("Fat", (double)statsData.Sum(d => d.Fat_g), (double)statsData.Sum(d => d.TargetFat_g), "g", "fat"),
+            new NutritionMetric("Fiber", (double)statsData.Sum(d => d.Fiber_g), (double)statsData.Sum(d => d.TargetFiber_g), "g", "fiber")
+        };
+
+    private IReadOnlyList<NutritionMetric> StatsAverages => statsData.Count == 0
+        ? Array.Empty<NutritionMetric>()
+        : StatsTotals
+            .Select(m => m with
+            {
+                Consumed = m.Consumed / statsData.Count,
+                Goal = m.Goal / statsData.Count
+            })
+            .ToArray();
+
+    private string StatsRangeLabel => statsRange switch
+    {
+        "week" => "Last week",
+        "month" => "Last month",
+        "all" => "All time",
+        _ => "Today"
+    };
+
+    private int LoggingStreak
+    {
+        get
+        {
+            var day = DateOnly.FromDateTime(DateTime.UtcNow);
+            var streak = 0;
+            while (loggedDates.Contains(day))
+            {
+                streak++;
+                day = day.AddDays(-1);
+            }
+            return streak;
+        }
+    }
+
+    private int StreakLevel => Math.Clamp(LoggingStreak, 0, 7);
+    private string CurrentAvatar => StreakStages[Math.Max(0, StreakLevel - 1)].Icon;
+    private string CurrentAvatarScale => StreakStages[Math.Max(0, StreakLevel - 1)].Scale;
+    private string StreakTitle => StreakLevel switch
+    {
+        >= 7 => "Peak consistency",
+        >= 5 => "Strong routine",
+        >= 3 => "Momentum building",
+        >= 1 => "Streak started",
+        _ => "Ready for day one"
+    };
+
+    private string RecommendationPrompt
+    {
+        get
+        {
+            var lowest = Metrics
+                .Where(m => m.Goal > 0)
+                .OrderBy(m => m.Consumed / m.Goal)
+                .FirstOrDefault();
+
+            return lowest is null
+                ? "Ask the AI for a meal idea once your targets are loaded."
+                : $"You are lowest on {lowest.Label.ToLowerInvariant()} right now. Ask for a meal that brings the day back into balance.";
+        }
+    }
+
+    private string WeightChangeText => weeklyReport?.WeightChange_kg is null
+        ? "n/a"
+        : $"{(weeklyReport.WeightChange_kg > 0 ? "+" : "")}{weeklyReport.WeightChange_kg:0.0} kg";
+
+    private string WeeklyStatusText => weeklyReport?.OnTrack switch
+    {
+        true => $"You are on track with your {weeklyReport.Goal} goal.",
+        false => $"Your progress is not matching your {weeklyReport.Goal} goal yet.",
+        _ => "Log meals and weekly weight to unlock a stronger progress signal."
+    };
+
+    private static readonly IReadOnlyList<StreakStage> StreakStages = new[]
+    {
+        new StreakStage(1, "🚶", "1"),
+        new StreakStage(2, "🏃", "1.05"),
+        new StreakStage(3, "🧘", "1.12"),
+        new StreakStage(4, "🏋️", "1.2"),
+        new StreakStage(5, "🚴", "1.28"),
+        new StreakStage(6, "🤸", "1.36"),
+        new StreakStage(7, "💪", "1.48")
+    };
+
+    protected override async Task OnProfileReadyAsync()
+    {
+        await LoadAsync();
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (activeTab == "statistics" && !chartRendered)
+        {
+            await RenderChartAsync();
+        }
+    }
+
+    private async Task LoadAsync()
+    {
+        if (UserId is null) return;
+
+        summary = await MealLogService.GetTodayAsync(UserId);
+        target = await TargetService.GetOrCreateTodayAsync(UserId);
+        favorites = await FavoriteService.GetAllAsync(UserId);
+        weeklyReport = await WeeklyReportService.GetWeekAsync(UserId, DateOnly.FromDateTime(DateTime.UtcNow));
+
+        var today = DateOnly.FromDateTime(DateTime.UtcNow);
+        loggedDates = await MealLogService.GetLoggedDatesAsync(UserId, today.AddDays(-30), today);
+        await LoadStatsAsync();
+        chartRendered = false;
+    }
+
+    private async Task SelectTab(string tab)
+    {
+        activeTab = tab;
+        chartRendered = false;
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private async Task SelectStatsMode(string mode)
+    {
+        statsMode = mode;
+        chartRendered = false;
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private async Task ChangeStatsRange(ChangeEventArgs args)
+    {
+        statsRange = args.Value?.ToString() ?? "today";
+        await LoadStatsAsync();
+        chartRendered = false;
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private async Task LoadStatsAsync()
+    {
+        if (UserId is null) return;
+
+        var today = DateOnly.FromDateTime(DateTime.UtcNow);
+        DateOnly? from = statsRange switch
+        {
+            "week" => today.AddDays(-6),
+            "month" => today.AddMonths(-1).AddDays(1),
+            "all" => null,
+            _ => today
+        };
+
+        statsData = await MealLogService.GetStatsAsync(UserId, from, today);
+    }
+
+    private async Task LogAsync()
+    {
+        if (UserId is null || string.IsNullOrWhiteSpace(rawInput) || isBusy) return;
+
+        isBusy = true;
+        error = null;
+        try
+        {
+            await MealLogService.CreateAsync(UserId, new CreateMealLogDto { RawInput = rawInput.Trim() });
+            rawInput = string.Empty;
+            recommendation = null;
+            await LoadAsync();
+        }
+        catch (Exception ex)
+        {
+            error = ex.Message;
+        }
+        finally
+        {
+            isBusy = false;
+        }
+    }
+
+    private async Task LogFavorite(Guid favoriteId)
+    {
+        if (UserId is null || isBusy) return;
+
+        isBusy = true;
+        error = null;
+        try
+        {
+            await FavoriteService.LogFromFavoriteAsync(UserId, favoriteId);
+            recommendation = null;
+            await LoadAsync();
+        }
+        catch (Exception ex)
+        {
+            error = ex.Message;
+        }
+        finally
+        {
+            isBusy = false;
+        }
+    }
+
+    private async Task SuggestNextMeal()
+    {
+        if (UserId is null || isRecommending) return;
+
+        isRecommending = true;
+        lastTrigger = "next";
+        recommendError = null;
+        try
+        {
+            recommendation = await RecommendationService.GenerateNextMealAsync(UserId);
+        }
+        catch (Exception ex)
+        {
+            recommendError = ex.Message;
+        }
+        finally
+        {
+            isRecommending = false;
+        }
+    }
+
+    private async Task SuggestTargetMiss()
+    {
+        if (UserId is null || isRecommending) return;
+
+        isRecommending = true;
+        lastTrigger = "targets";
+        recommendError = null;
+        try
+        {
+            recommendation = await RecommendationService.GenerateTargetMissAsync(UserId);
+        }
+        catch (Exception ex)
+        {
+            recommendError = ex.Message;
+        }
+        finally
+        {
+            isRecommending = false;
+        }
+    }
+
+    private async Task RenderChartAsync()
+    {
+        if (statsData.Count == 0) return;
+
+        if (statsMode == "balance")
+        {
+            var calorieTotals = StatsTotals.First(m => m.Label == "Calories");
+            var macroTotals = StatsTotals.Where(m => m.Label != "Calories").ToArray();
+
+            await JS.InvokeVoidAsync(
+                "nutriDashboard.renderBalanceCharts",
+                "calorieBalanceChart",
+                "macroBalanceChart",
+                new[] { "Calories" },
+                new[] { Math.Round(calorieTotals.Consumed, 1) },
+                new[] { Math.Round(calorieTotals.Goal, 1) },
+                macroTotals.Select(m => m.Label).ToArray(),
+                macroTotals.Select(m => Math.Round(m.Consumed, 1)).ToArray(),
+                macroTotals.Select(m => Math.Round(m.Goal, 1)).ToArray());
+        }
+        else
+        {
+            await JS.InvokeVoidAsync(
+                "nutriDashboard.renderTrendCharts",
+                "calorieTrendChart",
+                "macroTrendChart",
+                statsData.Select(d => d.Date.ToString("MMM d")).ToArray(),
+                statsData.Select(d => d.Calories).ToArray(),
+                statsData.Select(d => d.TargetCalories).ToArray(),
+                statsData.Select(d => Math.Round((double)d.Protein_g, 1)).ToArray(),
+                statsData.Select(d => Math.Round((double)d.Carbs_g, 1)).ToArray(),
+                statsData.Select(d => Math.Round((double)d.Fat_g, 1)).ToArray(),
+                statsData.Select(d => Math.Round((double)d.Fiber_g, 1)).ToArray());
+        }
+
+        chartRendered = true;
+    }
+
+    private static string ProgressWidth(double consumed, double goal)
+    {
+        if (goal <= 0) return "0";
+        return Math.Min(100, consumed / goal * 100).ToString("0");
+    }
+
+    private static string FormatNumber(double value) => value >= 100
+        ? value.ToString("0")
+        : value.ToString("0.#");
+
+    private static string FormatNumber(decimal value) => FormatNumber((double)value);
+
+    private sealed record NutritionMetric(string Label, double Consumed, double Goal, string Unit, string ClassName);
+    private sealed record StreakStage(int Day, string Icon, string Scale);
+}

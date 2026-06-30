@@ -8,5 +8,6 @@ public interface IMealLogService
     Task<DailyMealSummaryDto> GetTodayAsync(string userId);
     Task<DailyMealSummaryDto> GetByDateAsync(string userId, DateOnly date);
     Task<HashSet<DateOnly>> GetLoggedDatesAsync(string userId, DateOnly from, DateOnly to);
+    Task<List<DailyNutritionStatsDto>> GetStatsAsync(string userId, DateOnly? from, DateOnly to);
     Task DeleteAsync(string userId, Guid id);
 }

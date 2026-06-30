@@ -40,3 +40,7 @@ progress toward the goal
 7. Quick Logging via Messaging Platforms
 Integration with external messaging app for easier meal logging
 User can send a meal directly via chat (e.g. “ate 2 eggs and bread”) – the entry is automatically recorded in the application
+
+Developer setup guides:
+
+- [Discord bot setup](docs/discord-bot-setup.md)
