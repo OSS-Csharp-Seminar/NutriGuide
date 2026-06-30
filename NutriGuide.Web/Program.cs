@@ -103,6 +103,7 @@ builder.Services.AddScoped<IWellnessService, WellnessService>();
 builder.Services.AddScoped<IBotAccountLinkService, BotAccountLinkService>();
 builder.Services.AddScoped<IBotCommandService, BotCommandService>();
 builder.Services.AddHostedService<DiscordBotHostedService>();
+builder.Services.AddScoped<IWeeklyReportService, WeeklyReportService>();
 
 builder.Services.ConfigureApplicationCookie(options =>
 {

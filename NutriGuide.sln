@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 18
-VisualStudioVersion = 18.7.11919.86 stable
+VisualStudioVersion = 18.7.11919.86
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NutriGuide.Domain", "NutriGuide.Domain\NutriGuide.Domain.csproj", "{F4DEB7EC-7435-4DFA-A73A-D0529CF83E4D}"
 EndProject

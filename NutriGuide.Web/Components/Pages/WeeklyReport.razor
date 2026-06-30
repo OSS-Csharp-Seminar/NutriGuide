@@ -1,0 +1,220 @@
+﻿@page "/weekly"
+@attribute [Authorize]
+@rendermode InteractiveServer
+@inherits RequireProfile
+@using NutriGuide.Application.DTOs.WeeklyReport
+@using NutriGuide.Application.Interfaces
+@inject IWeeklyReportService ReportService
+
+<PageTitle>Weekly report</PageTitle>
+
+<h1>Weekly report</h1>
+<p class="text-muted">A summary of how your week is going against your targets.</p>
+
+@if (!ProfileReady || report is null)
+{
+    <p><em>Loading…</em></p>
+}
+else
+{
+    <div class="d-flex justify-content-between align-items-center mb-3" style="max-width: 560px;">
+        <button class="btn btn-sm btn-outline-secondary" @onclick="PrevWeek">‹ Previous</button>
+        <strong>@report.WeekStart.ToString("d MMM") – @report.WeekEnd.ToString("d MMM yyyy")</strong>
+        <button class="btn btn-sm btn-outline-secondary" @onclick="NextWeek" disabled="@IsCurrentWeek">Next ›</button>
+    </div>
+
+    <div class="card mb-3" style="max-width: 560px;">
+        <div class="card-body">
+            <h2 class="h5 mb-2">Weekly summary</h2>
+            @if (summary is null)
+            {
+                <p class="text-muted small mb-2">Get an AI overview of how your week went.</p>
+                <button class="btn btn-outline-primary btn-sm"
+                        @onclick="GenerateSummary" disabled="@isSummarizing">
+                    @(isSummarizing ? "Writing…" : "Generate summary")
+                </button>
+            }
+            else
+            {
+                <p class="mb-2">@summary</p>
+                <button class="btn btn-outline-secondary btn-sm"
+                        @onclick="GenerateSummary" disabled="@isSummarizing">
+                    @(isSummarizing ? "Writing…" : "Regenerate")
+                </button>
+            }
+            @if (summaryError is not null)
+            {
+                <div class="text-danger small mt-2">@summaryError</div>
+            }
+        </div>
+    </div>
+
+    @if (report.DaysLogged == 0)
+    {
+        <p>No meals logged this week.</p>
+    }
+    else
+    {
+        <p class="text-muted small">Based on @report.DaysLogged day(s) with logged meals.</p>
+
+        <div class="card mb-3" style="max-width: 560px;">
+            <div class="card-body">
+                <h2 class="h5 mb-3">Daily averages this week</h2>
+                <table class="table mb-0">
+                    <tbody>
+                        <tr><td>Calories</td><td class="text-end">@report.AvgCalories kcal</td></tr>
+                        <tr><td>Protein</td><td class="text-end">@report.AvgProtein_g g</td></tr>
+                        <tr><td>Carbs</td><td class="text-end">@report.AvgCarbs_g g</td></tr>
+                        <tr><td>Fat</td><td class="text-end">@report.AvgFat_g g</td></tr>
+                        <tr><td>Fiber</td><td class="text-end">@report.AvgFiber_g g</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        @if (report.TargetCalories > 0)
+        {
+            <div class="card mb-3" style="max-width: 560px;">
+                <div class="card-body">
+                    <h2 class="h6 mb-2">Calorie adherence</h2>
+                    <p class="mb-2">
+                        You averaged <strong>@report.AvgCalories</strong> kcal/day against a target of
+                        <strong>@report.TargetCalories</strong> kcal — that's @report.CalorieAdherence_pct% of target.
+                    </p>
+                    <div class="progress" style="height: 10px;">
+                        <div class="progress-bar @(report.CalorieAdherence_pct > 110 ? "bg-warning" : "bg-success")"
+                             role="progressbar"
+                             style="width: @(Math.Min(100, report.CalorieAdherence_pct))%;"></div>
+                    </div>
+                </div>
+            </div>
+        }
+    }
+
+    <div class="card" style="max-width: 560px;">
+        <div class="card-body">
+            <h2 class="h5 mb-3">Weight progress</h2>
+
+            @if (report.ThisWeekWeight_kg is null)
+            {
+                <p class="text-muted">No weight recorded for this week yet. Enter your weight below.</p>
+            }
+            else
+            {
+                <p class="mb-1">
+                    This week: <strong>@report.ThisWeekWeight_kg kg</strong>
+                    @if (report.StartingWeight_kg is not null && report.StartingWeight_kg != report.ThisWeekWeight_kg)
+                    {
+                        <span class="text-muted">(started at @report.StartingWeight_kg kg)</span>
+                    }
+                </p>
+                @if (report.WeightChange_kg is not null && report.WeightChange_kg != 0)
+                {
+                    <p class="mb-2">
+                        <span>
+                            @(report.WeightChange_kg < 0 ? "Down" : "Up")
+                            <strong>@Math.Abs(report.WeightChange_kg!.Value) kg</strong> since you started.
+                        </span>
+                        @if (report.OnTrack == true)
+                        {
+                            <span class="text-success">On track with your @report.Goal goal. 👍</span>
+                        }
+                        else if (report.OnTrack == false)
+                        {
+                            <span class="text-warning">Not matching your @report.Goal goal yet.</span>
+                        }
+                    </p>
+                }
+            }
+
+            @if (report.CanLogWeight)
+            {
+                <div class="input-group mt-2" style="max-width: 280px;">
+                    <input class="form-control" type="number" step="0.1" min="20" max="450"
+                           placeholder="Weight this week (kg)" @bind="newWeight" disabled="@isBusy" />
+                    <button class="btn btn-primary" @onclick="LogWeight"
+                            disabled="@(isBusy || newWeight is null)">
+                        @(isBusy ? "Saving…" : "Save weight")
+                    </button>
+                </div>
+            }
+            else
+            {
+                <p class="text-muted small mb-0">This week is before you started using the app.</p>
+            }
+            @if (weightError is not null)
+            {
+                <div class="text-danger small mt-2">@weightError</div>
+            }
+        </div>
+    </div>
+}
+
+@code {
+    private WeeklyReportDto? report;
+    private DateOnly anchorDate = DateOnly.FromDateTime(DateTime.UtcNow);
+    private decimal? newWeight;
+    private bool isBusy;
+    private string? weightError;
+    private string? summary;
+    private bool isSummarizing;
+    private string? summaryError;
+
+    private bool IsCurrentWeek =>
+        anchorDate >= DateOnly.FromDateTime(DateTime.UtcNow).AddDays(-6);
+
+    protected override async Task OnProfileReadyAsync()
+    {
+        await LoadAsync();
+    }
+
+    private async Task LoadAsync()
+    {
+        if (UserId is null) return;
+        report = await ReportService.GetWeekAsync(UserId, anchorDate);
+    }
+
+    private async Task PrevWeek()
+    {
+        anchorDate = anchorDate.AddDays(-7);
+        summary = null;
+        await LoadAsync();
+    }
+
+    private async Task NextWeek()
+    {
+        anchorDate = anchorDate.AddDays(7);
+        if (anchorDate > DateOnly.FromDateTime(DateTime.UtcNow))
+            anchorDate = DateOnly.FromDateTime(DateTime.UtcNow);
+        summary = null;
+        await LoadAsync();
+    }
+
+    private async Task LogWeight()
+    {
+        if (UserId is null || newWeight is null || isBusy) return;
+        isBusy = true;
+        weightError = null;
+        try
+        {
+            await ReportService.LogWeightAsync(UserId, anchorDate, newWeight.Value);
+            newWeight = null;
+            await LoadAsync();
+        }
+        catch (Exception ex) { weightError = ex.Message; }
+        finally { isBusy = false; }
+    }
+
+    private async Task GenerateSummary()
+    {
+        if (UserId is null || isSummarizing) return;
+        isSummarizing = true;
+        summaryError = null;
+        try
+        {
+            summary = await ReportService.GenerateSummaryAsync(UserId, anchorDate);
+        }
+        catch (Exception ex) { summaryError = ex.Message; }
+        finally { isSummarizing = false; }
+    }
+}

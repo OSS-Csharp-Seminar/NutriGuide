@@ -1,0 +1,125 @@
+﻿@page "/wellness"
+@attribute [Authorize]
+@rendermode InteractiveServer
+@inherits RequireProfile
+@using NutriGuide.Application.DTOs.Wellness
+@using NutriGuide.Application.Interfaces
+@inject IWellnessService WellnessService
+
+<PageTitle>How do you feel?</PageTitle>
+
+<h1>How do you feel?</h1>
+<p class="text-muted">
+    Describe how you're feeling — tired, bloated, low energy — and the AI will look at your
+    last 48 hours of meals and suggest something that might help.
+</p>
+
+<p class="text-muted small fst-italic">
+    AI suggestions are general guidance based on your logged meals — not medical advice.
+    If symptoms persist or worsen, talk to a healthcare professional.
+</p>
+
+@if (!ProfileReady)
+{
+    <p><em>Loading…</em></p>
+}
+else
+{
+    <div class="mb-4" style="max-width: 600px;">
+        <textarea class="form-control mb-2" rows="3"
+                  placeholder="e.g. I've felt tired and a bit bloated since yesterday afternoon"
+                  @bind="symptoms" @bind:event="oninput" disabled="@isBusy"></textarea>
+        <button class="btn btn-primary"
+                @onclick="Analyze"
+                disabled="@(isBusy || string.IsNullOrWhiteSpace(symptoms))">
+            @(isBusy ? "Analyzing…" : "Analyze how I feel")
+        </button>
+        @if (error is not null)
+        {
+            <div class="text-danger mt-2">@error</div>
+        }
+    </div>
+
+    @if (latest is not null)
+    {
+        <div class="card mb-4" style="max-width: 600px;">
+            <div class="card-body">
+                <h2 class="h5">What the AI thinks</h2>
+                <p>@latest.AiAnalysis</p>
+                @if (!string.IsNullOrWhiteSpace(latest.SuggestedMeal))
+                {
+                    <div class="alert alert-success mb-0">
+                        <strong>Suggested meal:</strong> @latest.SuggestedMeal
+                    </div>
+                }
+            </div>
+        </div>
+    }
+
+    @if (history.Count > 0)
+    {
+        <h2 class="h5">Past check-ins</h2>
+        <div style="max-width: 600px;">
+            @foreach (var entry in history)
+            {
+                <div class="card mb-2">
+                    <div class="card-body py-2">
+                        <div class="text-muted small">@entry.LoggedAt.ToString("dddd, d MMMM yyyy · HH:mm")</div>
+                        <div><strong>You said:</strong> @entry.Symptoms</div>
+                        @if (!string.IsNullOrWhiteSpace(entry.AiAnalysis))
+                        {
+                            <div class="small mt-1">@entry.AiAnalysis</div>
+                        }
+                        @if (!string.IsNullOrWhiteSpace(entry.SuggestedMeal))
+                        {
+                            <div class="small text-success mt-1">Suggested: @entry.SuggestedMeal</div>
+                        }
+                    </div>
+                </div>
+            }
+        </div>
+    }
+}
+
+@code {
+    private string symptoms = string.Empty;
+    private WellnessLogDto? latest;
+    private List<WellnessLogDto> history = new();
+    private bool isBusy;
+    private string? error;
+
+    protected override async Task OnProfileReadyAsync()
+    {
+        await LoadHistoryAsync();
+    }
+
+    private async Task LoadHistoryAsync()
+    {
+        if (UserId is null) return;
+        history = await WellnessService.GetHistoryAsync(UserId);
+    }
+
+    private async Task Analyze()
+    {
+        if (UserId is null || string.IsNullOrWhiteSpace(symptoms) || isBusy) return;
+        isBusy = true;
+        error = null;
+        try
+        {
+            latest = await WellnessService.CreateAsync(UserId, new CreateWellnessLogDto
+            {
+                Symptoms = symptoms.Trim()
+            });
+            symptoms = string.Empty;
+            await LoadHistoryAsync();
+        }
+        catch (Exception ex)
+        {
+            error = ex.Message;
+        }
+        finally
+        {
+            isBusy = false;
+        }
+    }
+}

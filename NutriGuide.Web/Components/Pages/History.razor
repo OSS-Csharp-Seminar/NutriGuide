@@ -5,6 +5,8 @@
 @using NutriGuide.Application.DTOs.MealLog
 @using NutriGuide.Application.Interfaces
 @inject IMealLogService MealLogService
+@using NutriGuide.Application.DTOs.Wellness
+@inject IWellnessService WellnessService
 
 <PageTitle>History</PageTitle>
 
@@ -98,6 +100,28 @@ else
                         </tbody>
                     </table>
                 }
+
+                @if (SelectedDayWellness.Count > 0)
+                {
+                    <h3 class="h6 mt-4">How you felt</h3>
+                    @foreach (var w in SelectedDayWellness)
+                    {
+                        <div class="card mb-2">
+                            <div class="card-body py-2">
+                                <div class="text-muted small">@w.LoggedAt.ToString("HH:mm")</div>
+                                <div><strong>You said:</strong> @w.Symptoms</div>
+                                @if (!string.IsNullOrWhiteSpace(w.AiAnalysis))
+                                {
+                                    <div class="small mt-1">@w.AiAnalysis</div>
+                                }
+                                @if (!string.IsNullOrWhiteSpace(w.SuggestedMeal))
+                                {
+                                    <div class="small text-success mt-1">Suggested: @w.SuggestedMeal</div>
+                                }
+                            </div>
+                        </div>
+                    }
+                }
             }
         </div>
     </div>
@@ -169,13 +193,22 @@ else
     private DateOnly? selectedDate;
     private DailyMealSummaryDto? daySummary;
     private HashSet<DateOnly> loggedDates = new();
+    private List<WellnessLogDto> wellnessEntries = new();
 
     private int daysInMonth => DateTime.DaysInMonth(currentMonth.Year, currentMonth.Month);
     private int leadingBlanks =>
         ((int)new DateTime(currentMonth.Year, currentMonth.Month, 1).DayOfWeek + 6) % 7; // Monday-first
+    private List<WellnessLogDto> SelectedDayWellness =>
+        selectedDate is null
+            ? new()
+            : wellnessEntries
+                .Where(w => DateOnly.FromDateTime(w.LoggedAt) == selectedDate.Value)
+                .ToList();
 
     protected override async Task OnProfileReadyAsync()
     {
+        if (UserId is not null)
+            wellnessEntries = await WellnessService.GetHistoryAsync(UserId);
         await LoadMonthAsync();
     }
 

@@ -38,8 +38,17 @@ public class UserProfileService : IUserProfileService
         };
         
         _context.UserProfiles.Add(profile);
+        var today = DateOnly.FromDateTime(DateTime.UtcNow);
+        _context.WeightProgress.Add(new WeightProgress
+        {
+            Id = Guid.NewGuid(),
+            UserId = userId,
+            RecordedDate = today,
+            Weight_kg = dto.Weight_kg
+        });
+
         await _context.SaveChangesAsync();
-        
+
         return MapToDto(profile);
     }
 

@@ -1,45 +1,247 @@
+/* ============================================================
+   NutriGuide theme — design tokens
+   Palette: fresh, warm, calm. Green is earned (good progress),
+   amber is "over / attention" (not alarming), terracotta only
+   for genuine errors.
+   ============================================================ */
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&display=swap');
+
+:root {
+    --ng-bg: #FAF8F3; /* warm off-white paper */
+    --ng-ink: #1F2A24; /* deep pine, near-black text */
+    --ng-ink-soft: #5C665F; /* muted text */
+    --ng-green: #2F7D5B; /* core green — primary actions, on-track */
+    --ng-green-d: #25624799; /* darker green for hover (uses alpha-less below) */
+    --ng-green-dk: #245A43;
+    --ng-amber: #E8B04B; /* over target / attention */
+    --ng-terra: #D96B52; /* errors / destructive only */
+    --ng-sand: #EDEAE1; /* card edges, dividers */
+    --ng-card: #FFFFFF; /* card surface, slightly above bg */
+
+    --ng-font-display: 'Inter', system-ui, sans-serif;
+    --ng-font-body: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
+    --ng-radius: 14px;
+    --ng-radius-sm: 10px;
+}
+
+/* ---------- base ---------- */
 html, body {
-    font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+    font-family: var(--ng-font-body);
+    background-color: var(--ng-bg);
+    color: var(--ng-ink);
+    -webkit-font-smoothing: antialiased;
+}
+
+h1, h2, h3, h4, h5, .navbar-brand {
+    font-family: var(--ng-font-display);
+    color: var(--ng-ink);
+    letter-spacing: -0.01em;
+}
+
+h1 {
+    font-weight: 600;
+}
+
+h2, h3 {
+    font-weight: 600;
+}
+
+p, .text-muted {
+    color: var(--ng-ink-soft) !important;
 }
 
 a, .btn-link {
-    color: #006bb7;
+    color: var(--ng-green);
+}
+
+    a:hover {
+        color: var(--ng-green-dk);
+    }
+
+/* Tabular figures so nutrition numbers line up in tables */
+table, .progress, .input-group, td, th {
+    font-variant-numeric: tabular-nums;
+}
+
+/* ---------- buttons ---------- */
+.btn {
+    border-radius: var(--ng-radius-sm);
+    font-weight: 500;
 }
 
 .btn-primary {
     color: #fff;
-    background-color: #1b6ec2;
-    border-color: #1861ac;
+    background-color: var(--ng-green);
+    border-color: var(--ng-green);
 }
 
-.btn:focus, .btn:active:focus, .btn-link.nav-link:focus, .form-control:focus, .form-check-input:focus {
-  box-shadow: 0 0 0 0.1rem white, 0 0 0 0.25rem #258cfb;
+    .btn-primary:hover,
+    .btn-primary:active,
+    .btn-primary:focus {
+        background-color: var(--ng-green-dk);
+        border-color: var(--ng-green-dk);
+        color: #fff;
+    }
+
+.btn-outline-primary {
+    color: var(--ng-green);
+    border-color: var(--ng-green);
 }
 
+    .btn-outline-primary:hover,
+    .btn-outline-primary:active {
+        background-color: var(--ng-green);
+        border-color: var(--ng-green);
+        color: #fff;
+    }
+
+.btn-outline-danger {
+    color: var(--ng-terra);
+    border-color: var(--ng-terra);
+}
+
+    .btn-outline-danger:hover {
+        background-color: var(--ng-terra);
+        border-color: var(--ng-terra);
+        color: #fff;
+    }
+
+.btn-success {
+    background-color: var(--ng-green);
+    border-color: var(--ng-green);
+}
+
+    .btn-success:hover {
+        background-color: var(--ng-green-dk);
+        border-color: var(--ng-green-dk);
+    }
+
+.btn:focus, .btn:active:focus, .btn-link.nav-link:focus,
+.form-control:focus, .form-check-input:focus, .form-select:focus {
+    box-shadow: 0 0 0 0.1rem var(--ng-bg), 0 0 0 0.22rem rgba(47,125,91,0.55);
+    border-color: var(--ng-green);
+}
+
+/* ---------- cards ---------- */
+.card {
+    background-color: var(--ng-card);
+    border: 1px solid var(--ng-sand);
+    border-radius: var(--ng-radius);
+    box-shadow: 0 1px 2px rgba(31,42,36,0.04), 0 6px 18px rgba(31,42,36,0.04);
+}
+
+.card-body {
+    padding: 1.35rem 1.5rem;
+}
+
+/* ---------- tables ---------- */
+.table {
+    color: var(--ng-ink);
+    --bs-table-border-color: var(--ng-sand);
+}
+
+    .table > :not(caption) > * > * {
+        border-bottom-color: var(--ng-sand);
+        padding-top: 0.6rem;
+        padding-bottom: 0.6rem;
+    }
+
+    .table thead th {
+        font-size: 0.75rem;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        color: var(--ng-ink-soft);
+        font-weight: 600;
+        border-bottom: 1px solid var(--ng-sand);
+    }
+
+/* ---------- progress bars ---------- */
+.progress {
+    background-color: var(--ng-sand);
+    border-radius: 999px;
+}
+
+.progress-bar.bg-success {
+    background-color: var(--ng-green) !important;
+}
+
+.progress-bar.bg-warning {
+    background-color: var(--ng-amber) !important;
+}
+
+/* ---------- forms ---------- */
+.form-control, .form-select {
+    border-radius: var(--ng-radius-sm);
+    border-color: var(--ng-sand);
+    background-color: #fff;
+}
+
+    .form-control::placeholder {
+        color: #aeb4af;
+    }
+
+/* ---------- alerts (recolored to palette) ---------- */
+.alert-success {
+    background-color: #EAF3EE;
+    border-color: #CFE5D9;
+    color: var(--ng-green-dk);
+    border-radius: var(--ng-radius-sm);
+}
+
+.alert-info {
+    background-color: #FBF3E2;
+    border-color: #F0E2C4;
+    color: #8A6A1E;
+    border-radius: var(--ng-radius-sm);
+}
+
+.alert-danger {
+    background-color: #FBEAE6;
+    border-color: #F1CFC7;
+    color: #A4422E;
+    border-radius: var(--ng-radius-sm);
+}
+
+.text-success {
+    color: var(--ng-green) !important;
+}
+
+.text-warning {
+    color: #B5872B !important;
+}
+
+.text-danger {
+    color: var(--ng-terra) !important;
+}
+
+/* ---------- content spacing ---------- */
 .content {
-    padding-top: 1.1rem;
+    padding-top: 1.5rem;
 }
 
 h1:focus {
     outline: none;
 }
 
+/* ---------- validation ---------- */
 .valid.modified:not([type=checkbox]) {
-    outline: 1px solid #26b050;
+    outline: 1px solid var(--ng-green);
 }
 
 .invalid {
-    outline: 1px solid #e50000;
+    outline: 1px solid var(--ng-terra);
 }
 
 .validation-message {
-    color: #e50000;
+    color: var(--ng-terra);
 }
 
+/* ---------- Blazor error UI (unchanged behavior) ---------- */
 .blazor-error-boundary {
-    background: url(data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNTYiIGhlaWdodD0iNDkiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyIgeG1sbnM6eGxpbms9Imh0dHA6Ly93d3cudzMub3JnLzE5OTkveGxpbmsiIG92ZXJmbG93PSJoaWRkZW4iPjxkZWZzPjxjbGlwUGF0aCBpZD0iY2xpcDAiPjxyZWN0IHg9IjIzNSIgeT0iNTEiIHdpZHRoPSI1NiIgaGVpZ2h0PSI0OSIvPjwvY2xpcFBhdGg+PC9kZWZzPjxnIGNsaXAtcGF0aD0idXJsKCNjbGlwMCkiIHRyYW5zZm9ybT0idHJhbnNsYXRlKC0yMzUgLTUxKSI+PHBhdGggZD0iTTI2My41MDYgNTFDMjY0LjcxNyA1MSAyNjUuODEzIDUxLjQ4MzcgMjY2LjYwNiA1Mi4yNjU4TDI2Ny4wNTIgNTIuNzk4NyAyNjcuNTM5IDUzLjYyODMgMjkwLjE4NSA5Mi4xODMxIDI5MC41NDUgOTIuNzk1IDI5MC42NTYgOTIuOTk2QzI5MC44NzcgOTMuNTEzIDI5MSA5NC4wODE1IDI5MSA5NC42NzgyIDI5MSA5Ny4wNjUxIDI4OS4wMzggOTkgMjg2LjYxNyA5OUwyNDAuMzgzIDk5QzIzNy45NjMgOTkgMjM2IDk3LjA2NTEgMjM2IDk0LjY3ODIgMjM2IDk0LjM3OTkgMjM2LjAzMSA5NC4wODg2IDIzNi4wODkgOTMuODA3MkwyMzYuMzM4IDkzLjAxNjIgMjM2Ljg1OCA5Mi4xMzE0IDI1OS40NzMgNTMuNjI5NCAyNTkuOTYxIDUyLjc5ODUgMjYwLjQwNyA1Mi4yNjU4QzI2MS4yIDUxLjQ4MzcgMjYyLjI5NiA1MSAyNjMuNTA2IDUxWk0yNjMuNTg2IDY2LjAxODNDMjYwLjczNyA2Ni4wMTgzIDI1OS4zMTMgNjcuMTI0NSAyNTkuMzEzIDY5LjMzNyAyNTkuMzEzIDY5LjYxMDIgMjU5LjMzMiA2OS44NjA4IDI1OS4zNzEgNzAuMDg4N0wyNjEuNzk1IDg0LjAxNjEgMjY1LjM4IDg0LjAxNjEgMjY3LjgyMSA2OS43NDc1QzI2Ny44NiA2OS43MzA5IDI2Ny44NzkgNjkuNTg3NyAyNjcuODc5IDY5LjMxNzkgMjY3Ljg3OSA2Ny4xMTgyIDI2Ni40NDggNjYuMDE4MyAyNjMuNTg2IDY2LjAxODNaTTI2My41NzYgODYuMDU0N0MyNjEuMDQ5IDg2LjA1NDcgMjU5Ljc4NiA4Ny4zMDA1IDI1OS43ODYgODkuNzkyMSAyNTkuNzg2IDkyLjI4MzcgMjYxLjA0OSA5My41Mjk1IDI2My41NzYgOTMuNTI5NSAyNjYuMTE2IDkzLjUyOTUgMjY3LjM4NyA5Mi4yODM3IDI2Ny4zODcgODkuNzkyMSAyNjcuMzg3IDg3LjMwMDUgMjY2LjExNiA4Ni4wNTQ3IDI2My41NzYgODYuMDU0N1oiIGZpbGw9IiNGRkU1MDAiIGZpbGwtcnVsZT0iZXZlbm9kZCIvPjwvZz48L3N2Zz4=) no-repeat 1rem/1.8rem, #b32121;
+    background: url(data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNTYiIGhlaWdodD0iNDkiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyIgeG1sbnM6eGxpbms9Imh0dHA6Ly93d3cudzMub3JnLzE5OTkveGxpbmsiIG92ZXJmbG93PSJoaWRkZW4iPjxkZWZzPjxjbGlwUGF0aCBpZD0iY2xpcDAiPjxyZWN0IHg9IjIzNSIgeT0iNTEiIHdpZHRoPSI1NiIgaGVpZ2h0PSI0OSIvPjwvY2xpcFBhdGg+PC9kZWZzPjxnIGNsaXAtcGF0aD0idXJsKCNjbGlwMCkiIHRyYW5zZm9ybT0idHJhbnNsYXRlKC0yMzUgLTUxKSI+PHBhdGggZD0iTTI2My41MDYgNTFDMjY0LjcxNyA1MSAyNjUuODEzIDUxLjQ4MzcgMjY2LjYwNiA1Mi4yNjU4TDI2Ny4wNTIgNTIuNzk4NyAyNjcuNTM5IDUzLjYyODMgMjkwLjE4NSA5Mi4xODMxIDI5MC41NDUgOTIuNzk1IDI5MC42NTYgOTIuOTk2QzI5MC44NzcgOTMuNTEzIDI5MSA5NC4wODE1IDI5MSA5NC42NzgyIDI5MSA5Ny4wNjUxIDI4OS4wMzggOTkgMjg2LjYxNyA5OUwyNDAuMzgzIDk5QzIzNy45NjMgOTkgMjM2IDk3LjA2NTEgMjM2IDk0LjY3ODIgMjM2IDk0LjM3OTkgMjM2LjAzMSA5NC4wODg2IDIzNi4wODkgOTMuODA3MkwyMzYuMzM4IDkzLjAxNjIgMjM2Ljg1OCA5Mi4xMzE0IDI1OS40NzMgNTMuNjI5NCAyNTkuOTYxIDUyLjc5ODUgMjYwLjQwNyA1Mi4yNjU4QzI2MS4yIDUxLjQ4MzcgMjYyLjI5NiA1MSAyNjMuNTA2IDUxWk0yNjMuNTg2IDY2LjAxODNDMjYwLjczNyA2Ni4wMTgzIDI1OS4zMTMgNjcuMTI0NSAyNTkuMzEzIDY5LjMzNyAyNTkuMzEzIDY5LjYxMDIgMjU5LjMzMiA2OS44NjA4IDI1OS4zNzEgNzAuMDg4N0wyNjEuNzk1IDg0LjAxNjEgMjY1LjM4IDg0LjAxNjEgMjY3LjgyMSA2OS43NDc1QzI2Ny44NiA2OS43MzA5IDI2Ny44NzkgNjkuNTg3NyAyNjcuODc5IDY5LjMxNzkgMjY3Ljg3OSA2Ny4xMTgyIDI2Ni40NDggNjYuMDE4MyAyNjMuNTg2IDY2LjAxODNaTTI2My41NzYgODYuMDU0N0MyNjEuMDQ5IDg2LjA1NDcgMjU5Ljc4NiA4Ny4zMDA1IDI1OS43ODYgODkuNzkyMSAyNTkuNzg2IDkyLjI4MzcgMjYxLjA0OSA5My41Mjk1IDI2My41NzYgOTMuNTI5NSAyNjYuMTE2IDkzLjUyOTUgMjY3LjM4NyA5Mi4yODM3IDI2Ny4zODcgODkuNzkyMSAyNjcuMzg3IDg3LjMwMDUgMjY2LjExNiA4Ni4wNTQ3IDI2My41NzYgODYuMDU0N1oiIGZpbGw9IiNGRkU1MDAiIGZpbGwtcnVsZT0iZXZlbm9kZCIvPjwvZz48L3N2Zz4=) no-repeat 1rem/1.8rem, var(--ng-terra);
     padding: 1rem 1rem 1rem 3.7rem;
     color: white;
+    border-radius: var(--ng-radius-sm);
 }
 
     .blazor-error-boundary::after {
