@@ -75,5 +75,31 @@ public class BotAccountLinkService : IBotAccountLinkService
             .FirstOrDefaultAsync();
     }
 
+    public async Task<bool> HasLinkedAccountAsync(string userId, MessagingPlatform platform)
+    {
+        return await _context.MessagingConnections
+            .AnyAsync(connection =>
+                connection.UserId == userId &&
+                connection.Platform == platform &&
+                connection.IsActive);
+    }
+
+    public async Task RemoveLinkedAccountAsync(string userId, MessagingPlatform platform)
+    {
+        var connections = await _context.MessagingConnections
+            .Where(connection =>
+                connection.UserId == userId &&
+                connection.Platform == platform &&
+                connection.IsActive)
+            .ToListAsync();
+
+        foreach (var connection in connections)
+        {
+            connection.IsActive = false;
+        }
+
+        await _context.SaveChangesAsync();
+    }
+
     private static string CacheKey(string code) => $"bot-link-code:{code.Trim()}";
 }

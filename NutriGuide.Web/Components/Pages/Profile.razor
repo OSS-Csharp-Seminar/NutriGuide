@@ -94,24 +94,44 @@ else
 
     <section class="mt-5" style="max-width: 640px;">
         <h2 class="h4">Discord bot</h2>
-        <p class="text-muted">
-            Generate a one-time command, copy it, then paste it in Discord to link your account.
-        </p>
-
-        <button class="btn btn-outline-primary mb-3" type="button" @onclick="GenerateDiscordLinkCommand" disabled="@isGeneratingDiscordCode">
-            @(isGeneratingDiscordCode ? "Generating..." : "Generate Discord link command")
-        </button>
-
-        @if (discordLinkCommand is not null)
+        @if (isDiscordLinked)
         {
-            <label class="form-label">Command to paste in Discord</label>
-            <div class="input-group">
-                <input class="form-control" value="@discordLinkCommand" readonly />
-                <button class="btn btn-outline-secondary" type="button" @onclick="CopyDiscordLinkCommand">
-                    Copy
+            <p class="text-muted">
+                Discord logging is linked for this account. Remove it if you want to connect a different Discord account.
+            </p>
+            <div class="d-flex gap-2 flex-wrap align-items-center mb-3">
+                <button class="btn btn-outline-primary" type="button" disabled>
+                    Discord connected
+                </button>
+                <button class="btn btn-outline-danger" type="button" @onclick="RemoveDiscordLink" disabled="@isRemovingDiscordLink">
+                    @(isRemovingDiscordLink ? "Removing..." : "Remove")
                 </button>
             </div>
-            <div class="form-text">This command expires in 10 minutes.</div>
+        }
+        else
+        {
+            <p class="text-muted">
+                Generate a one-time command, copy it, then paste it in Discord to link your account.
+            </p>
+
+            <button class="btn btn-outline-primary mb-3" type="button" @onclick="GenerateDiscordLinkCommand" disabled="@isGeneratingDiscordCode">
+                @(isGeneratingDiscordCode ? "Generating..." : "Generate Discord link command")
+            </button>
+
+            @if (discordLinkCommand is not null)
+            {
+                <label class="form-label">Command to paste in Discord</label>
+                <div class="input-group">
+                    <input class="form-control" value="@discordLinkCommand" readonly />
+                    <button class="btn btn-outline-secondary" type="button" @onclick="CopyDiscordLinkCommand">
+                        Copy
+                    </button>
+                    <button class="btn btn-outline-primary" type="button" @onclick="RefreshDiscordLinkStatus">
+                        Check status
+                    </button>
+                </div>
+                <div class="form-text">This command expires in 10 minutes.</div>
+            }
         }
 
         @if (discordMessage is not null)
@@ -133,6 +153,8 @@ else
     private string? savedMessage;
     private string? error;
     private bool isGeneratingDiscordCode;
+    private bool isRemovingDiscordLink;
+    private bool isDiscordLinked;
     private string? discordLinkCommand;
     private string? discordMessage;
     private string? discordError;
@@ -167,6 +189,8 @@ else
                 Weight_kg = 70
             };
         }
+
+        await LoadDiscordLinkStatus();
     }
 
     private async Task SaveAsync()
@@ -219,7 +243,7 @@ else
 
     private void GenerateDiscordLinkCommand()
     {
-        if (userId is null || isGeneratingDiscordCode) return;
+        if (userId is null || isGeneratingDiscordCode || isDiscordLinked) return;
 
         isGeneratingDiscordCode = true;
         discordMessage = null;
@@ -238,6 +262,60 @@ else
         finally
         {
             isGeneratingDiscordCode = false;
+        }
+    }
+
+    private async Task RemoveDiscordLink()
+    {
+        if (userId is null || isRemovingDiscordLink) return;
+
+        isRemovingDiscordLink = true;
+        discordMessage = null;
+        discordError = null;
+
+        try
+        {
+            await BotAccountLinkService.RemoveLinkedAccountAsync(userId, MessagingPlatform.Discord);
+            discordLinkCommand = null;
+            isDiscordLinked = false;
+            discordMessage = "Discord account removed. You can generate a new link command when you're ready.";
+        }
+        catch (Exception ex)
+        {
+            discordError = ex.Message;
+        }
+        finally
+        {
+            isRemovingDiscordLink = false;
+        }
+    }
+
+    private async Task LoadDiscordLinkStatus()
+    {
+        if (userId is null) return;
+
+        isDiscordLinked = await BotAccountLinkService.HasLinkedAccountAsync(userId, MessagingPlatform.Discord);
+        if (isDiscordLinked)
+        {
+            discordLinkCommand = null;
+        }
+    }
+
+    private async Task RefreshDiscordLinkStatus()
+    {
+        discordMessage = null;
+        discordError = null;
+
+        try
+        {
+            await LoadDiscordLinkStatus();
+            discordMessage = isDiscordLinked
+                ? "Discord is linked now."
+                : "Discord is not linked yet. Paste the command in Discord, then check again.";
+        }
+        catch (Exception ex)
+        {
+            discordError = ex.Message;
         }
     }
 

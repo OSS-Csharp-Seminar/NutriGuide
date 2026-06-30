@@ -710,6 +710,71 @@ h1:focus {
     gap: 1rem;
 }
 
+.stats-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-bottom: 1rem;
+    padding: 0.45rem;
+    border: 1px solid var(--ng-sand);
+    border-radius: 8px;
+    background: rgba(255,255,255,0.72);
+}
+
+.chart-tabs {
+    display: inline-flex;
+    gap: 0.35rem;
+}
+
+.chart-tab {
+    min-width: 104px;
+    border: 0;
+    border-radius: 6px;
+    padding: 0.62rem 0.95rem;
+    color: var(--ng-ink-soft);
+    background: transparent;
+    font-weight: 800;
+    transition: transform 160ms ease, background-color 160ms ease, color 160ms ease;
+}
+
+.chart-tab:hover {
+    transform: translateY(-1px);
+    color: var(--ng-green-dk);
+}
+
+.chart-tab.active {
+    color: #fff;
+    background: var(--ng-green);
+    box-shadow: 0 8px 18px rgba(47,125,91,0.2);
+}
+
+.range-picker {
+    display: grid;
+    grid-template-columns: auto minmax(150px, 190px);
+    gap: 0.6rem;
+    align-items: center;
+    margin: 0;
+}
+
+.range-picker span {
+    color: var(--ng-ink-soft);
+    font-size: 0.78rem;
+    font-weight: 800;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+}
+
+.balance-layout,
+.trends-layout {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.balance-layout .stats-summary-card,
+.trends-layout .stats-summary-card {
+    grid-column: 1 / -1;
+}
+
 .chart-card {
     min-height: 560px;
 }
@@ -720,6 +785,18 @@ h1:focus {
     padding: 1rem;
     border-radius: 8px;
     background: linear-gradient(180deg, #FFFFFF, #FCFBF7);
+}
+
+.split-chart {
+    height: 360px;
+}
+
+.trend-chart {
+    height: 420px;
+}
+
+.empty-stats-card {
+    max-width: 760px;
 }
 
 .stats-list {
@@ -872,12 +949,23 @@ h1:focus {
     }
 
     .dashboard-tabs,
+    .stats-toolbar,
+    .chart-tabs,
     .dashboard-grid,
     .statistics-layout,
     .quick-log-box,
     .weekly-stats {
         display: grid;
         grid-template-columns: 1fr;
+        width: 100%;
+    }
+
+    .range-picker {
+        grid-template-columns: 1fr;
+        width: 100%;
+    }
+
+    .range-picker .form-select {
         width: 100%;
     }
 

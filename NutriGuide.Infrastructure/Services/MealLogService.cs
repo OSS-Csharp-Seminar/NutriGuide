@@ -159,6 +159,68 @@ public class MealLogService : IMealLogService
         return dates.Select(DateOnly.FromDateTime).ToHashSet();
     }
 
+    public async Task<List<DailyNutritionStatsDto>> GetStatsAsync(string userId, DateOnly? from, DateOnly to)
+    {
+        var summariesQuery = _context.DailyNutritionSummaries
+            .Where(s => s.UserId == userId &&
+                        s.SummaryDate <= to &&
+                        s.MealCount > 0);
+
+        if (from.HasValue)
+            summariesQuery = summariesQuery.Where(s => s.SummaryDate >= from.Value);
+
+        var summaries = await summariesQuery
+            .OrderBy(s => s.SummaryDate)
+            .ToListAsync();
+
+        if (summaries.Count == 0)
+            return new List<DailyNutritionStatsDto>();
+
+        var firstSummaryDate = summaries.First().SummaryDate;
+        var targets = await _context.DailyTargets
+            .Where(t => t.UserId == userId && t.TargetDate <= to)
+            .OrderBy(t => t.TargetDate)
+            .ToListAsync();
+
+        if (targets.Count == 0)
+        {
+            targets = await _context.DailyTargets
+                .Where(t => t.UserId == userId)
+                .OrderBy(t => t.TargetDate)
+                .Take(1)
+                .ToListAsync();
+        }
+
+        var result = new List<DailyNutritionStatsDto>();
+        foreach (var summary in summaries)
+        {
+            var target = targets
+                .Where(t => t.TargetDate <= summary.SummaryDate)
+                .OrderByDescending(t => t.TargetDate)
+                .FirstOrDefault()
+                ?? targets.FirstOrDefault(t => t.TargetDate >= firstSummaryDate)
+                ?? targets.LastOrDefault();
+
+            result.Add(new DailyNutritionStatsDto
+            {
+                Date = summary.SummaryDate,
+                Calories = summary.TotalCalories,
+                Protein_g = summary.TotalProtein_g,
+                Carbs_g = summary.TotalCarbs_g,
+                Fat_g = summary.TotalFat_g,
+                Fiber_g = summary.TotalFiber_g,
+                MealCount = summary.MealCount,
+                TargetCalories = target?.Calories ?? 0,
+                TargetProtein_g = target?.Protein_g ?? 0,
+                TargetCarbs_g = target?.Carbs_g ?? 0,
+                TargetFat_g = target?.Fat_g ?? 0,
+                TargetFiber_g = target?.Fiber_g ?? 0
+            });
+        }
+
+        return result;
+    }
+
     private static MealLogDto MapToDto(MealLog meal) => new()
     {
         Id = meal.Id,
