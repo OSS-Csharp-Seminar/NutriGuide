@@ -3,5 +3,6 @@
 public enum MessagingPlatform
 {
     WhatsApp,
-    Discord
+    Discord,
+    Telegram
 }

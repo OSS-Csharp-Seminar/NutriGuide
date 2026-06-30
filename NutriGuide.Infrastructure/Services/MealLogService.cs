@@ -35,7 +35,7 @@ public class MealLogService : IMealLogService
             Fat_g = nutrition.Fat_g,
             Fiber_g = nutrition.Fiber_g,
             AiNote = nutrition.AiNote,
-            Source = Domain.Enums.MealSource.Manual
+            Source = dto.Source ?? Domain.Enums.MealSource.Manual
         };
 
         _context.MealLogs.Add(mealLog);

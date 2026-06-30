@@ -10,6 +10,7 @@ using NutriGuide.Infrastructure.Services;
 using NutriGuide.Web.Components;
 using NutriGuide.Web.Middleware;
 using Microsoft.AspNetCore.Components.Authorization;
+using NutriGuide.Web.Bots;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -87,6 +88,8 @@ builder.Services.AddSwaggerGen(options =>
 
 // Controllers (za API endpointove)
 builder.Services.AddControllers();
+builder.Services.AddMemoryCache();
+builder.Services.Configure<DiscordBotOptions>(builder.Configuration.GetSection("DiscordBot"));
 
 // Servisi
 builder.Services.AddScoped<IAuthService, AuthService>();
@@ -97,6 +100,9 @@ builder.Services.AddScoped<IMealLogService, MealLogService>();
 builder.Services.AddScoped<IAiRecommendationService, AiRecommendationService>();
 builder.Services.AddScoped<IFavoriteMealService, FavoriteMealService>();
 builder.Services.AddScoped<IWellnessService, WellnessService>();
+builder.Services.AddScoped<IBotAccountLinkService, BotAccountLinkService>();
+builder.Services.AddScoped<IBotCommandService, BotCommandService>();
+builder.Services.AddHostedService<DiscordBotHostedService>();
 
 builder.Services.ConfigureApplicationCookie(options =>
 {

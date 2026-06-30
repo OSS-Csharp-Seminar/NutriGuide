@@ -8,7 +8,9 @@
 @using NutriGuide.Domain.Enums
 @inject IUserProfileService ProfileService
 @inject IDailyTargetService TargetService
+@inject IBotAccountLinkService BotAccountLinkService
 @inject AuthenticationStateProvider AuthProvider
+@inject IJSRuntime JSRuntime
 
 <PageTitle>Your profile</PageTitle>
 
@@ -89,6 +91,38 @@ else
     {
         <div class="alert alert-danger mt-3">@error</div>
     }
+
+    <section class="mt-5" style="max-width: 640px;">
+        <h2 class="h4">Discord bot</h2>
+        <p class="text-muted">
+            Generate a one-time command, copy it, then paste it in Discord to link your account.
+        </p>
+
+        <button class="btn btn-outline-primary mb-3" type="button" @onclick="GenerateDiscordLinkCommand" disabled="@isGeneratingDiscordCode">
+            @(isGeneratingDiscordCode ? "Generating..." : "Generate Discord link command")
+        </button>
+
+        @if (discordLinkCommand is not null)
+        {
+            <label class="form-label">Command to paste in Discord</label>
+            <div class="input-group">
+                <input class="form-control" value="@discordLinkCommand" readonly />
+                <button class="btn btn-outline-secondary" type="button" @onclick="CopyDiscordLinkCommand">
+                    Copy
+                </button>
+            </div>
+            <div class="form-text">This command expires in 10 minutes.</div>
+        }
+
+        @if (discordMessage is not null)
+        {
+            <div class="alert alert-info mt-3">@discordMessage</div>
+        }
+        @if (discordError is not null)
+        {
+            <div class="alert alert-danger mt-3">@discordError</div>
+        }
+    </section>
 }
 
 @code {
@@ -98,6 +132,10 @@ else
     private bool isBusy;
     private string? savedMessage;
     private string? error;
+    private bool isGeneratingDiscordCode;
+    private string? discordLinkCommand;
+    private string? discordMessage;
+    private string? discordError;
 
     protected override async Task OnInitializedAsync()
     {
@@ -176,6 +214,48 @@ else
         finally
         {
             isBusy = false;
+        }
+    }
+
+    private void GenerateDiscordLinkCommand()
+    {
+        if (userId is null || isGeneratingDiscordCode) return;
+
+        isGeneratingDiscordCode = true;
+        discordMessage = null;
+        discordError = null;
+
+        try
+        {
+            var code = BotAccountLinkService.CreateLinkCode(userId);
+            discordLinkCommand = $"/link code:{code}";
+            discordMessage = "Paste this command in Discord to finish linking your account.";
+        }
+        catch (Exception ex)
+        {
+            discordError = ex.Message;
+        }
+        finally
+        {
+            isGeneratingDiscordCode = false;
+        }
+    }
+
+    private async Task CopyDiscordLinkCommand()
+    {
+        if (discordLinkCommand is null) return;
+
+        discordMessage = null;
+        discordError = null;
+
+        try
+        {
+            await JSRuntime.InvokeVoidAsync("navigator.clipboard.writeText", discordLinkCommand);
+            discordMessage = "Copied. Paste it in Discord.";
+        }
+        catch (Exception ex)
+        {
+            discordError = $"Copy failed. Select the command and copy it manually. {ex.Message}";
         }
     }
 
