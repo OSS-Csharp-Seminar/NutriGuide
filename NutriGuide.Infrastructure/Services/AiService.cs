@@ -146,30 +146,53 @@ public class AiService : IAiService
                       Respond in English language.
                       """;
 
-        return await SendMessageAsync(prompt);
+        return await SendMessageAsync(prompt, temperature: 0.9);
     }
 
     public async Task<string> GenerateTargetMissRecommendationAsync(List<MealLog> todaysMeals, DailyTarget target)
     {
+        var mealsDescription = todaysMeals.Any()
+        ? string.Join(", ", todaysMeals.Select(m => m.RawInput))
+        : "nothing yet";
+
         var totalCalories = todaysMeals.Sum(m => m.Calories ?? 0);
         var totalProtein = todaysMeals.Sum(m => m.Protein_g ?? 0);
         var remainingCalories = target.Calories - totalCalories;
         var remainingProtein = target.Protein_g - totalProtein;
 
-        var prompt = $"""
-                      You are a nutrition analyst. The user is at the end of the day and hasn't reached their targets.
+        var gaps = new List<string>();
+        if (remainingCalories > 0) gaps.Add($"about {remainingCalories} kcal");
+        if (remainingProtein > 0) gaps.Add($"about {remainingProtein}g protein");
 
-                      Remaining to reach targets:
-                      - Calories: {remainingCalories} kcal
-                      - Protein: {remainingProtein}g
+        string prompt;
+        if (gaps.Count == 0)
+        {
 
-                      Suggest a light evening snack or meal to help close the gap.
-                      Keep the response concise, 2-3 sentences maximum.
-                      The recommendation should help the user improve their nutritional balance before the end of the day.
-                      Respond in English language.
-                      """;
+            prompt = $"""
+                  You are a nutrition analyst. The user has already met their calorie and protein targets for today.
+                  Today they ate: {mealsDescription}
+                  Briefly congratulate them and, if appropriate, suggest a light option only if they're still hungry.
+                  Keep it to 1-2 sentences. Respond in English language.
+                  """;
+        }
+        else
+        {
+            prompt = $"""
+                  You are a nutrition analyst. The user is ending their day still short on some targets.
 
-        return await SendMessageAsync(prompt);
+                  Today they ate: {mealsDescription}
+
+                  They still need {string.Join(" and ", gaps)} to reach their remaining targets.
+                  Their other targets are already met, so do not push more of those.
+
+                  Suggest one realistic snack or small meal to help close the gap — it can be sweet or savory,
+                  and should be varied and specific. Avoid defaulting to common suggestions like plain yogurt.
+                  Keep the response concise, 2-3 sentences maximum.
+                  Respond in English language.
+                  """;
+        }
+
+        return await SendMessageAsync(prompt, temperature: 0.9);
     }
 
     private async Task<string> SendMessageAsync(string prompt, double temperature = 0.7, int? maxTokens = null)
@@ -218,7 +241,7 @@ public class AiService : IAiService
         var jsonStructure = """
                             {
                                 "analysis": "<2-3 sentences analyzing the nutritional connection to symptoms>",
-                                "suggestedMeal": "<one specific meal suggestion that could help>"
+                                "suggestedMeal": "<a meal suggestion if one would genuinely help, otherwise an empty string>"
                             }
                             """;
 
@@ -230,10 +253,14 @@ public class AiService : IAiService
                       Meals in the last 48 hours: {mealsDescription}
 
                       Guidelines for your analysis:
-                      - First judge whether the recent meals look balanced and adequate. 
+                      - If the user reports feeling good or well rather than a problem, affirm it warmly, 
+                        note their diet appears to be supporting them, and do not invent issues or force a corrective meal.
+                      - If they report a problem, first judge whether the recent meals look balanced and adequate. 
                         If they do, say so plainly and note that the symptoms may not be diet-related. 
                         Do NOT invent a nutritional cause when none is evident.
-                      - Only point to a nutritional factor if there is a clear, well-established link. Avoid speculative or obscure mechanisms.
+                      - Only point to a nutritional factor if there is a clear, well-established link. 
+                        Avoid speculative or obscure mechanisms.
+                      - Suggest a meal only when it would genuinely help; otherwise the suggestion can be a light general option or encouragement.
                       - Be honest rather than reassuring or alarming.
 
                       Then suggest one realistic meal or snack that could genuinely help — it must include actual food, not only a drink.

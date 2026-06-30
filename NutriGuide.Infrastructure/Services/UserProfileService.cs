@@ -18,9 +18,9 @@ public class UserProfileService : IUserProfileService
     public async Task<UserProfileDto> CreateAsync(string userId, CreateUserProfileDto dto)
     {
         var existingProfile = await  _context.UserProfiles.FirstOrDefaultAsync(p => p.UserId == userId);
-        
+
         if (existingProfile != null)
-            throw new Exception("Profile already exists");
+            throw new InvalidOperationException("Profile already exists");
 
         var profile = new UserProfile
         {

@@ -132,9 +132,9 @@ public class DailyTargetService : IDailyTargetService
         
         double protein = (double)profile.Weight_kg * 2.0;
         double fat = targetCalories * 0.25 / 9;
-        double carbs = (targetCalories - protein * 4 - fat * 9) / 4;
+        double carbs = Math.Max(0, (targetCalories - protein * 4 - fat * 9) / 4);
 
-        
+
         double fiber = targetCalories / 1000 * 14;
 
         return (

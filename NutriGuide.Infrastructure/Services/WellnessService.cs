@@ -47,7 +47,7 @@ public class WellnessService : IWellnessService
             Id = Guid.NewGuid(),
             UserId = userId,
             TriggerType = Domain.Enums.TriggerType.Wellness,
-            RecommendationText = $"{analysis.Analysis}\n\nPrijedlog obroka: {analysis.SuggestedMeal}",
+            RecommendationText = $"{analysis.Analysis}\n\nMeal suggestion: {analysis.SuggestedMeal}",
             CreatedAt = DateTime.UtcNow,
             ExpiresAt = DateTime.UtcNow.AddHours(24),
             IsRead = false
