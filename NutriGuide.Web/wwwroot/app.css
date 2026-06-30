@@ -260,3 +260,637 @@ h1:focus {
 .form-floating > .form-control-plaintext:focus::placeholder, .form-floating > .form-control:focus::placeholder {
     text-align: start;
 }
+
+/* ---------- dashboard ---------- */
+.dashboard-shell {
+    max-width: 1180px;
+    margin: 0 auto;
+    padding: 0.5rem 0 2rem;
+}
+
+.dashboard-hero {
+    display: flex;
+    justify-content: space-between;
+    gap: 1.5rem;
+    align-items: center;
+    margin-bottom: 1rem;
+    padding: 1.4rem;
+    border: 1px solid rgba(47, 125, 91, 0.16);
+    border-radius: 8px;
+    background:
+        linear-gradient(135deg, rgba(255,255,255,0.92), rgba(251,243,226,0.86)),
+        radial-gradient(circle at 90% 20%, rgba(47,125,91,0.15), transparent 32%);
+    box-shadow: 0 18px 45px rgba(31,42,36,0.08);
+    animation: dashboardRise 520ms ease-out both;
+}
+
+.dashboard-hero h1 {
+    margin: 0.2rem 0 0.25rem;
+    font-size: clamp(2rem, 5vw, 4.1rem);
+    line-height: 0.95;
+}
+
+.dashboard-hero p {
+    max-width: 620px;
+    margin: 0;
+    font-size: 1rem;
+}
+
+.dashboard-kicker,
+.eyebrow {
+    display: block;
+    color: var(--ng-green-dk);
+    font-size: 0.74rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
+.hero-score {
+    display: grid;
+    place-items: center;
+    flex: 0 0 132px;
+    width: 132px;
+    height: 132px;
+    border-radius: 50%;
+    color: var(--ng-green-dk);
+    background:
+        radial-gradient(circle at center, #fff 58%, transparent 60%),
+        conic-gradient(var(--ng-green) 0deg, var(--ng-amber) 250deg, rgba(237,234,225,0.95) 250deg);
+    box-shadow: inset 0 0 0 1px rgba(47,125,91,0.16), 0 10px 24px rgba(31,42,36,0.08);
+    animation: softPulse 2.8s ease-in-out infinite;
+}
+
+.hero-score span {
+    display: block;
+    margin-top: 1.1rem;
+    font-size: 2rem;
+    font-weight: 800;
+    line-height: 1;
+}
+
+.hero-score small {
+    margin-top: -1.35rem;
+    color: var(--ng-ink-soft);
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+}
+
+.dashboard-tabs {
+    display: inline-flex;
+    gap: 0.35rem;
+    padding: 0.35rem;
+    margin-bottom: 1rem;
+    border: 1px solid var(--ng-sand);
+    border-radius: 8px;
+    background: rgba(255,255,255,0.72);
+}
+
+.dashboard-tab {
+    min-width: 108px;
+    border: 0;
+    border-radius: 6px;
+    padding: 0.65rem 1rem;
+    color: var(--ng-ink-soft);
+    background: transparent;
+    font-weight: 700;
+    transition: transform 160ms ease, background-color 160ms ease, color 160ms ease;
+}
+
+.dashboard-tab:hover {
+    transform: translateY(-1px);
+    color: var(--ng-green-dk);
+}
+
+.dashboard-tab.active {
+    color: #fff;
+    background: var(--ng-green);
+    box-shadow: 0 8px 18px rgba(47,125,91,0.2);
+}
+
+.dashboard-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1.1fr) minmax(280px, 0.9fr) minmax(280px, 0.9fr);
+    gap: 1rem;
+}
+
+.dash-card {
+    position: relative;
+    overflow: hidden;
+    min-width: 0;
+    padding: 1.2rem;
+    border: 1px solid rgba(237,234,225,0.96);
+    border-radius: 8px;
+    background: rgba(255,255,255,0.9);
+    box-shadow: 0 10px 30px rgba(31,42,36,0.06);
+}
+
+.dash-card::before {
+    content: "";
+    position: absolute;
+    inset: 0 0 auto;
+    height: 3px;
+    background: linear-gradient(90deg, var(--ng-green), var(--ng-amber), #7BA7A3);
+    opacity: 0.72;
+}
+
+.targets-card,
+.meal-list-card {
+    grid-row: span 2;
+}
+
+.card-heading {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-bottom: 1rem;
+}
+
+.card-heading h2 {
+    margin: 0.1rem 0 0;
+    font-size: 1.15rem;
+}
+
+.status-pill {
+    display: inline-flex;
+    align-items: center;
+    min-height: 30px;
+    padding: 0.32rem 0.6rem;
+    border-radius: 999px;
+    color: var(--ng-ink-soft);
+    background: var(--ng-sand);
+    font-size: 0.78rem;
+    font-weight: 800;
+    white-space: nowrap;
+}
+
+.status-pill.success {
+    color: var(--ng-green-dk);
+    background: #EAF3EE;
+}
+
+.status-pill.attention {
+    color: #8A6A1E;
+    background: #FBF3E2;
+}
+
+.target-row {
+    margin-bottom: 0.92rem;
+}
+
+.target-row-top {
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-bottom: 0.35rem;
+    color: var(--ng-ink-soft);
+    font-size: 0.88rem;
+}
+
+.target-row-top strong {
+    color: var(--ng-ink);
+    white-space: nowrap;
+}
+
+.target-track {
+    height: 12px;
+    overflow: hidden;
+    border-radius: 999px;
+    background: #F0EEE8;
+}
+
+.target-fill {
+    height: 100%;
+    min-width: 8px;
+    border-radius: inherit;
+    background: linear-gradient(90deg, var(--ng-green), #7BAF8A);
+    animation: fillSlide 900ms ease-out both, progressGlow 2.8s ease-in-out infinite;
+}
+
+.target-fill.calories {
+    background: linear-gradient(90deg, #2F7D5B, #7BA7A3);
+}
+
+.target-fill.protein {
+    background: linear-gradient(90deg, #245A43, #69A979);
+}
+
+.target-fill.carbs {
+    background: linear-gradient(90deg, #B5872B, #E8B04B);
+}
+
+.target-fill.fat {
+    background: linear-gradient(90deg, #7BA7A3, #A7C7C2);
+}
+
+.target-fill.fiber {
+    background: linear-gradient(90deg, #D96B52, #E8B04B);
+}
+
+.quick-log-box {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 0.55rem;
+}
+
+.favorite-strip {
+    display: flex;
+    gap: 0.45rem;
+    flex-wrap: wrap;
+    margin-top: 0.9rem;
+}
+
+.favorite-chip {
+    border: 1px solid rgba(47,125,91,0.18);
+    border-radius: 999px;
+    padding: 0.4rem 0.7rem;
+    color: var(--ng-green-dk);
+    background: #EAF3EE;
+    font-size: 0.82rem;
+    font-weight: 700;
+    transition: transform 160ms ease, box-shadow 160ms ease;
+}
+
+.favorite-chip:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 8px 16px rgba(47,125,91,0.14);
+}
+
+.recommendation-body {
+    min-height: 104px;
+    display: flex;
+    align-items: center;
+    margin-bottom: 1rem;
+    padding: 1rem;
+    border: 1px solid #F0E2C4;
+    border-radius: 8px;
+    background: linear-gradient(135deg, #FBF3E2, #FFFFFF);
+}
+
+.recommendation-body p {
+    margin: 0;
+}
+
+.streak-stage {
+    display: grid;
+    grid-template-columns: repeat(7, minmax(34px, 1fr));
+    gap: 0.45rem;
+    align-items: end;
+    margin-bottom: 1rem;
+}
+
+.streak-avatar {
+    display: grid;
+    place-items: center;
+    gap: 0.2rem;
+    min-height: 74px;
+    border-radius: 8px;
+    color: var(--ng-ink-soft);
+    background: #F4F1EA;
+    opacity: 0.56;
+    transform: scale(0.94);
+    transition: transform 180ms ease, opacity 180ms ease, background-color 180ms ease;
+}
+
+.streak-avatar span {
+    font-size: 1.25rem;
+}
+
+.streak-avatar small {
+    font-weight: 800;
+}
+
+.streak-avatar.active {
+    color: var(--ng-green-dk);
+    background: #EAF3EE;
+    opacity: 1;
+    transform: scale(var(--avatar-scale));
+    animation: avatarPop 520ms ease-out both;
+}
+
+.fitness-level {
+    display: grid;
+    grid-template-columns: 82px minmax(0, 1fr);
+    gap: 1rem;
+    align-items: center;
+    padding: 1rem;
+    border-radius: 8px;
+    background: linear-gradient(135deg, #FFFFFF, #EAF3EE);
+}
+
+.fitness-person {
+    display: grid;
+    place-items: center;
+    width: 64px;
+    height: 64px;
+    font-size: 2.1rem;
+    transform: scale(var(--person-scale));
+    animation: bob 2.2s ease-in-out infinite;
+}
+
+.fitness-level p {
+    margin: 0.2rem 0 0;
+    font-size: 0.9rem;
+}
+
+.meal-timeline {
+    display: grid;
+    gap: 0.85rem;
+}
+
+.meal-item {
+    position: relative;
+    display: grid;
+    grid-template-columns: 18px minmax(0, 1fr);
+    gap: 0.65rem;
+}
+
+.meal-dot {
+    width: 11px;
+    height: 11px;
+    margin-top: 0.34rem;
+    border-radius: 50%;
+    background: var(--ng-green);
+    box-shadow: 0 0 0 6px #EAF3EE;
+}
+
+.meal-title {
+    display: flex;
+    justify-content: space-between;
+    gap: 0.75rem;
+}
+
+.meal-title strong {
+    overflow-wrap: anywhere;
+}
+
+.meal-title span,
+.meal-macros {
+    color: var(--ng-ink-soft);
+    font-size: 0.82rem;
+}
+
+.meal-macros {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.45rem;
+    margin-top: 0.2rem;
+}
+
+.meal-macros span {
+    padding: 0.15rem 0.42rem;
+    border-radius: 999px;
+    background: #F4F1EA;
+}
+
+.meal-item p {
+    margin: 0.35rem 0 0;
+    font-size: 0.85rem;
+}
+
+.empty-meals {
+    display: grid;
+    gap: 0.25rem;
+    padding: 1rem;
+    border: 1px dashed rgba(47,125,91,0.28);
+    border-radius: 8px;
+    background: #FCFBF7;
+}
+
+.weekly-stats {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.65rem;
+}
+
+.weekly-stats div {
+    padding: 0.8rem;
+    border-radius: 8px;
+    background: #F8F5EF;
+}
+
+.weekly-stats span {
+    display: block;
+    color: var(--ng-ink);
+    font-size: 1.2rem;
+    font-weight: 800;
+}
+
+.weekly-stats small {
+    color: var(--ng-ink-soft);
+    font-size: 0.76rem;
+    font-weight: 700;
+}
+
+.weekly-progress-line {
+    height: 10px;
+    overflow: hidden;
+    margin: 1rem 0;
+    border-radius: 999px;
+    background: #F0EEE8;
+}
+
+.weekly-progress-line span {
+    display: block;
+    height: 100%;
+    border-radius: inherit;
+    background: linear-gradient(90deg, var(--ng-green), var(--ng-amber));
+    animation: fillSlide 900ms ease-out both;
+}
+
+.weekly-note {
+    margin: 0;
+}
+
+.statistics-layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1.6fr) minmax(280px, 0.7fr);
+    gap: 1rem;
+}
+
+.chart-card {
+    min-height: 560px;
+}
+
+.chart-wrap {
+    position: relative;
+    height: 460px;
+    padding: 1rem;
+    border-radius: 8px;
+    background: linear-gradient(180deg, #FFFFFF, #FCFBF7);
+}
+
+.stats-list {
+    display: grid;
+    gap: 0.65rem;
+}
+
+.stats-list div {
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+    padding-bottom: 0.65rem;
+    border-bottom: 1px solid var(--ng-sand);
+}
+
+.stats-list span {
+    color: var(--ng-ink-soft);
+}
+
+.stats-note {
+    margin: 1rem 0 0;
+    font-size: 0.9rem;
+}
+
+.dashboard-loading {
+    display: grid;
+    place-items: center;
+    min-height: 360px;
+    gap: 1rem;
+}
+
+.loading-orb {
+    width: 72px;
+    height: 72px;
+    border: 8px solid #EAF3EE;
+    border-top-color: var(--ng-green);
+    border-radius: 50%;
+    animation: spin 900ms linear infinite;
+}
+
+.pop-in {
+    animation: dashboardRise 520ms ease-out both;
+}
+
+.delay-1 {
+    animation-delay: 70ms;
+}
+
+.delay-2 {
+    animation-delay: 140ms;
+}
+
+.delay-3 {
+    animation-delay: 210ms;
+}
+
+.delay-4 {
+    animation-delay: 280ms;
+}
+
+.delay-5 {
+    animation-delay: 350ms;
+}
+
+@keyframes dashboardRise {
+    from {
+        opacity: 0;
+        transform: translateY(14px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes fillSlide {
+    from {
+        width: 0;
+    }
+}
+
+@keyframes progressGlow {
+    0%, 100% {
+        filter: saturate(1);
+    }
+    50% {
+        filter: saturate(1.25) brightness(1.04);
+    }
+}
+
+@keyframes softPulse {
+    0%, 100% {
+        transform: scale(1);
+    }
+    50% {
+        transform: scale(1.025);
+    }
+}
+
+@keyframes avatarPop {
+    0% {
+        transform: scale(0.82);
+    }
+    70% {
+        transform: scale(calc(var(--avatar-scale) + 0.07));
+    }
+    100% {
+        transform: scale(var(--avatar-scale));
+    }
+}
+
+@keyframes bob {
+    0%, 100% {
+        transform: translateY(0) scale(var(--person-scale));
+    }
+    50% {
+        transform: translateY(-4px) scale(var(--person-scale));
+    }
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+@media (max-width: 1100px) {
+    .dashboard-grid,
+    .statistics-layout {
+        grid-template-columns: 1fr 1fr;
+    }
+
+    .targets-card,
+    .meal-list-card,
+    .chart-card {
+        grid-column: 1 / -1;
+    }
+}
+
+@media (max-width: 760px) {
+    .dashboard-hero {
+        align-items: flex-start;
+        flex-direction: column;
+    }
+
+    .hero-score {
+        width: 112px;
+        height: 112px;
+        flex-basis: 112px;
+    }
+
+    .dashboard-tabs,
+    .dashboard-grid,
+    .statistics-layout,
+    .quick-log-box,
+    .weekly-stats {
+        display: grid;
+        grid-template-columns: 1fr;
+        width: 100%;
+    }
+
+    .streak-stage {
+        grid-template-columns: repeat(4, minmax(42px, 1fr));
+    }
+
+    .fitness-level {
+        grid-template-columns: 1fr;
+    }
+
+    .chart-wrap {
+        height: 360px;
+        padding: 0.5rem;
+    }
+}
