@@ -223,6 +223,222 @@ h1:focus {
     outline: none;
 }
 
+/* ---------- profile ---------- */
+.profile-workspace {
+    display: grid;
+    grid-template-columns: minmax(0, 1.05fr) minmax(320px, 0.8fr);
+    gap: 1rem;
+    align-items: start;
+    max-width: 1080px;
+}
+
+.profile-card {
+    position: relative;
+    overflow: hidden;
+    padding: 1.25rem;
+    border: 1px solid rgba(237,234,225,0.96);
+    border-radius: 8px;
+    background: rgba(255,255,255,0.9);
+    box-shadow: 0 12px 34px rgba(31,42,36,0.07);
+}
+
+.profile-card::before {
+    content: "";
+    position: absolute;
+    inset: 0 0 auto;
+    height: 3px;
+    background: linear-gradient(90deg, var(--ng-green), #7BA7A3, var(--ng-amber));
+}
+
+.discord-card {
+    background:
+        linear-gradient(140deg, rgba(255,255,255,0.94), rgba(251,243,226,0.78)),
+        radial-gradient(circle at 96% 12%, rgba(123,167,163,0.24), transparent 34%);
+}
+
+.profile-card-heading {
+    margin-bottom: 1rem;
+}
+
+.profile-card-heading h2 {
+    margin: 0.1rem 0 0;
+    font-size: 1.25rem;
+}
+
+.profile-form-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0 0.85rem;
+}
+
+.discord-command-group {
+    flex-wrap: nowrap;
+}
+
+.discord-command-group .form-control {
+    min-width: 0;
+}
+
+/* ---------- log meal ---------- */
+.log-meal-shell {
+    display: grid;
+    grid-template-columns: minmax(400px, 0.95fr) minmax(0, 1.45fr);
+    gap: 1rem;
+    align-items: start;
+    width: 100%;
+    max-width: none;
+}
+
+.log-meal-left {
+    display: grid;
+    gap: 1rem;
+}
+
+.log-panel {
+    position: relative;
+    overflow: hidden;
+    padding: 1.2rem;
+    border: 1px solid rgba(237,234,225,0.96);
+    border-radius: 8px;
+    background: rgba(255,255,255,0.92);
+    box-shadow: 0 12px 34px rgba(31,42,36,0.07);
+}
+
+.log-panel::before {
+    content: "";
+    position: absolute;
+    inset: 0 0 auto;
+    height: 3px;
+    background: linear-gradient(90deg, var(--ng-green), #7BA7A3, var(--ng-amber));
+}
+
+.log-entry-panel {
+    background:
+        linear-gradient(135deg, rgba(255,255,255,0.96), rgba(234,243,238,0.78)),
+        radial-gradient(circle at 92% 18%, rgba(47,125,91,0.16), transparent 34%);
+}
+
+.ai-panel {
+    background:
+        linear-gradient(145deg, rgba(255,255,255,0.94), rgba(251,243,226,0.82)),
+        radial-gradient(circle at 96% 0%, rgba(232,176,75,0.18), transparent 36%);
+}
+
+.log-panel-heading {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-bottom: 1rem;
+}
+
+.log-panel-heading.compact {
+    display: block;
+    margin-bottom: 0.85rem;
+}
+
+.log-panel-heading h2 {
+    margin: 0.1rem 0 0;
+    font-size: 1.2rem;
+}
+
+.log-input-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 0.55rem;
+}
+
+.log-stats-row {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.65rem;
+    margin-bottom: 1rem;
+}
+
+.log-stats-row div {
+    padding: 0.8rem;
+    border-radius: 8px;
+    background: #F8F5EF;
+}
+
+.log-stats-row span {
+    display: block;
+    color: var(--ng-ink);
+    font-size: 1.25rem;
+    font-weight: 800;
+}
+
+.log-stats-row small {
+    color: var(--ng-ink-soft);
+    font-size: 0.76rem;
+    font-weight: 700;
+}
+
+.log-favorites {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.favorite-log-group {
+    max-width: 100%;
+}
+
+.favorite-log-group .btn-success {
+    overflow: hidden;
+    max-width: 220px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.meal-table-panel {
+    min-width: 0;
+    justify-self: stretch;
+}
+
+.table-heading {
+    align-items: center;
+}
+
+.log-meal-table {
+    margin-bottom: 0;
+}
+
+.log-meal-table tbody tr {
+    transition: background-color 160ms ease, transform 160ms ease;
+}
+
+.log-meal-table tbody tr:hover {
+    background-color: #FCFBF7;
+}
+
+.log-meal-table td:first-child {
+    min-width: 220px;
+}
+
+.log-meal-table td:not(:first-child),
+.log-meal-table th:not(:first-child) {
+    white-space: nowrap;
+}
+
+.meal-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.45rem;
+}
+
+.log-empty-state {
+    color: var(--ng-ink-soft);
+}
+
+.log-empty-state strong {
+    color: var(--ng-ink);
+}
+
+.log-empty-state span {
+    display: block;
+}
+
 /* ---------- validation ---------- */
 .valid.modified:not([type=checkbox]) {
     outline: 1px solid var(--ng-green);
@@ -924,6 +1140,10 @@ h1:focus {
 }
 
 @media (max-width: 1100px) {
+    .log-meal-shell {
+        grid-template-columns: 1fr;
+    }
+
     .dashboard-grid,
     .statistics-layout {
         grid-template-columns: 1fr 1fr;
@@ -937,6 +1157,37 @@ h1:focus {
 }
 
 @media (max-width: 760px) {
+    .profile-workspace,
+    .profile-form-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .discord-command-group {
+        display: grid;
+        grid-template-columns: 1fr;
+    }
+
+    .discord-command-group > .form-control,
+    .discord-command-group > .btn {
+        width: 100%;
+        border-radius: var(--ng-radius-sm) !important;
+    }
+
+    .log-input-row,
+    .log-stats-row {
+        grid-template-columns: 1fr;
+    }
+
+    .table-heading {
+        align-items: flex-start;
+        flex-direction: column;
+    }
+
+    .meal-actions {
+        align-items: stretch;
+        flex-direction: column;
+    }
+
     .dashboard-hero {
         align-items: flex-start;
         flex-direction: column;

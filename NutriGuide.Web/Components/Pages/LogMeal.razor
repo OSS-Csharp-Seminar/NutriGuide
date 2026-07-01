@@ -23,141 +23,181 @@
 }
 else
 {
-    <div class="card mb-4" style="max-width: 540px;">
-        <div class="card-body">
-            <h2 class="h5 mb-3">Today's progress</h2>
-            @ProgressRow("Calories", summary.TotalCalories, target.Calories, "kcal")
-            @ProgressRow("Protein", (double)summary.TotalProtein_g, (double)target.Protein_g, "g")
-            @ProgressRow("Carbs", (double)summary.TotalCarbs_g, (double)target.Carbs_g, "g")
-            @ProgressRow("Fat", (double)summary.TotalFat_g, (double)target.Fat_g, "g")
-            @ProgressRow("Fiber", (double)summary.TotalFiber_g, (double)target.Fiber_g, "g")
-        </div>
-    </div>
+    <div class="log-meal-shell">
+        <div class="log-meal-left">
+            <section class="log-panel log-entry-panel">
+                <div class="log-panel-heading">
+                    <span class="eyebrow">New entry</span>
+                    <h2>What did you eat?</h2>
+                </div>
+                <div class="log-input-row">
+                    <input class="form-control" placeholder="e.g. 2 bananas and a large yogurt"
+                           @bind="rawInput" @bind:event="oninput" disabled="@isBusy" />
+                    <button class="btn btn-primary" @onclick="LogAsync"
+                            disabled="@(isBusy || string.IsNullOrWhiteSpace(rawInput))">
+                        @(isBusy ? "Estimating…" : "Log meal")
+                    </button>
+                </div>
+                @if (error is not null)
+                {
+                    <div class="text-danger mt-2">@error</div>
+                }
+            </section>
 
-    <div class="card mb-4" style="max-width: 540px;">
-        <div class="card-body">
-            <h2 class="h5 mb-1">Ask the AI</h2>
-            <p class="text-muted small mb-3">Get a suggestion based on what you've eaten today.</p>
+            <section class="log-panel">
+                <div class="log-panel-heading compact">
+                    <span class="eyebrow">Today</span>
+                    <h2>Progress</h2>
+                </div>
+                <div class="log-stats-row">
+                    <div>
+                        <span>@summary.TotalCalories</span>
+                        <small>kcal logged</small>
+                    </div>
+                    <div>
+                        <span>@summary.Meals.Count</span>
+                        <small>meals</small>
+                    </div>
+                </div>
+                @ProgressRow("Calories", summary.TotalCalories, target.Calories, "kcal")
+                @ProgressRow("Protein", (double)summary.TotalProtein_g, (double)target.Protein_g, "g")
+                @ProgressRow("Carbs", (double)summary.TotalCarbs_g, (double)target.Carbs_g, "g")
+                @ProgressRow("Fat", (double)summary.TotalFat_g, (double)target.Fat_g, "g")
+                @ProgressRow("Fiber", (double)summary.TotalFiber_g, (double)target.Fiber_g, "g")
+            </section>
 
-            @if (CaloriesMet)
+            <section class="log-panel ai-panel">
+                <div class="log-panel-heading compact">
+                    <span class="eyebrow">Assistant</span>
+                    <h2>Ask the AI</h2>
+                </div>
+                <p class="small mb-3">Get a suggestion based on what you've eaten today.</p>
+
+                @if (CaloriesMet)
+                {
+                    <div class="alert alert-success mb-0">
+                        You've hit your calorie goal for today — nicely done. You can still log anything else you eat below.
+                    </div>
+                }
+                else
+                {
+                    <div class="d-flex gap-2 flex-wrap">
+                        <button class="btn btn-outline-primary btn-sm"
+                                @onclick="SuggestNextMeal" disabled="@isRecommending">
+                            @(isRecommending && lastTrigger == "next" ? "Thinking…" : "Suggest my next meal")
+                        </button>
+                        <button class="btn btn-outline-primary btn-sm"
+                                @onclick="SuggestTargetMiss" disabled="@isRecommending">
+                            @(isRecommending && lastTrigger == "miss" ? "Thinking…" : "Help me hit my targets")
+                        </button>
+                    </div>
+                }
+
+                @if (recommendation is not null && !CaloriesMet)
+                {
+                    <div class="alert alert-info mt-3 mb-0">
+                        @recommendation.RecommendationText
+                    </div>
+                }
+                @if (recommendError is not null)
+                {
+                    <div class="text-danger mt-2 small">@recommendError</div>
+                }
+            </section>
+
+            @if (favorites.Count > 0)
             {
-                <div class="alert alert-success mb-0">
-                    You've hit your calorie goal for today — nicely done. You can still log anything else you eat below.
+                <section class="log-panel favorites-panel">
+                    <div class="log-panel-heading compact">
+                        <span class="eyebrow">Shortcuts</span>
+                        <h2>Quick log a favorite</h2>
+                    </div>
+                    <div class="log-favorites">
+                        @foreach (var fav in favorites)
+                        {
+                            <div class="btn-group favorite-log-group">
+                                <button class="btn btn-sm btn-success"
+                                        @onclick="() => LogFavorite(fav.Id)" disabled="@isBusy"
+                                        title="@($"{fav.Calories} kcal")">
+                                    @fav.Name
+                                </button>
+                                <button class="btn btn-sm btn-outline-danger"
+                                        @onclick="() => RemoveFavorite(fav.Id)" disabled="@isBusy"
+                                        title="Remove from favorites">
+                                    ×
+                                </button>
+                            </div>
+                        }
+                    </div>
+                </section>
+            }
+        </div>
+
+        <section class="log-panel meal-table-panel">
+            <div class="log-panel-heading table-heading">
+                <div>
+                    <span class="eyebrow">Logged today</span>
+                    <h2>Meal breakdown</h2>
+                </div>
+                <span class="status-pill @(CaloriesMet ? "success" : "attention")">
+                    @(CaloriesMet ? "Goal met" : "In progress")
+                </span>
+            </div>
+
+            @if (summary.Meals.Count == 0)
+            {
+                <div class="empty-meals log-empty-state">
+                    <strong>No meals logged yet today.</strong>
+                    <span>Add your first one from the meal box on the left.</span>
                 </div>
             }
             else
             {
-                <div class="d-flex gap-2 flex-wrap">
-                    <button class="btn btn-outline-primary btn-sm"
-                            @onclick="SuggestNextMeal" disabled="@isRecommending">
-                        @(isRecommending && lastTrigger == "next" ? "Thinking…" : "Suggest my next meal")
-                    </button>
-                    <button class="btn btn-outline-primary btn-sm"
-                            @onclick="SuggestTargetMiss" disabled="@isRecommending">
-                        @(isRecommending && lastTrigger == "miss" ? "Thinking…" : "Help me hit my targets")
-                    </button>
-                </div>
-            }
-
-            @if (recommendation is not null && !CaloriesMet)
-            {
-                <div class="alert alert-info mt-3 mb-0">
-                    @recommendation.RecommendationText
-                </div>
-            }
-            @if (recommendError is not null)
-            {
-                <div class="text-danger mt-2 small">@recommendError</div>
-            }
-        </div>
-    </div>
-
-    <div class="mb-4" style="max-width: 540px;">
-        <div class="input-group">
-            <input class="form-control" placeholder="e.g. 2 bananas and a large yogurt"
-                   @bind="rawInput" @bind:event="oninput" disabled="@isBusy" />
-            <button class="btn btn-primary" @onclick="LogAsync"
-                    disabled="@(isBusy || string.IsNullOrWhiteSpace(rawInput))">
-                @(isBusy ? "Estimating…" : "Log meal")
-            </button>
-        </div>
-        @if (error is not null)
-        {
-            <div class="text-danger mt-2">@error</div>
-        }
-    </div>
-
-    @if (favorites.Count > 0)
-    {
-        <div class="mb-4" style="max-width: 540px;">
-            <h2 class="h6">Quick log a favorite</h2>
-            <div class="d-flex flex-wrap gap-2">
-                @foreach (var fav in favorites)
-                {
-                    <div class="btn-group">
-                        <button class="btn btn-sm btn-success"
-                                @onclick="() => LogFavorite(fav.Id)" disabled="@isBusy"
-                                title="@($"{fav.Calories} kcal")">
-                            @fav.Name
-                        </button>
-                        <button class="btn btn-sm btn-outline-danger"
-                                @onclick="() => RemoveFavorite(fav.Id)" disabled="@isBusy"
-                                title="Remove from favorites">
-                            ×
-                        </button>
-                    </div>
-                }
-            </div>
-        </div>
-    }
-
-    @if (summary.Meals.Count == 0)
-    {
-        <p>No meals logged yet today. Add your first one above.</p>
-    }
-    else
-    {
-        <table class="table">
-            <thead>
-                <tr>
-                    <th>Meal</th>
-                    <th>Calories</th>
-                    <th>Protein</th>
-                    <th>Carbs</th>
-                    <th>Fat</th>
-                    <th></th>
-                </tr>
-            </thead>
-            <tbody>
-                @foreach (var meal in summary.Meals)
-                {
-                    <tr>
-                        <td>
-                            @meal.RawInput
-                            @if (!string.IsNullOrWhiteSpace(meal.AiNote))
+                <div class="table-responsive">
+                    <table class="table log-meal-table">
+                        <thead>
+                            <tr>
+                                <th>Meal</th>
+                                <th>Calories</th>
+                                <th>Protein</th>
+                                <th>Carbs</th>
+                                <th>Fat</th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var meal in summary.Meals)
                             {
-                                <div class="text-muted small">@meal.AiNote</div>
+                                <tr>
+                                    <td>
+                                        <strong>@meal.RawInput</strong>
+                                        @if (!string.IsNullOrWhiteSpace(meal.AiNote))
+                                        {
+                                            <div class="text-muted small">@meal.AiNote</div>
+                                        }
+                                    </td>
+                                    <td>@meal.Calories</td>
+                                    <td>@meal.Protein_g g</td>
+                                    <td>@meal.Carbs_g g</td>
+                                    <td>@meal.Fat_g g</td>
+                                    <td class="meal-actions">
+                                        <button class="btn btn-sm btn-outline-secondary"
+                                                @onclick="() => SaveFavorite(meal.Id)" disabled="@isBusy">
+                                            ☆ Save
+                                        </button>
+                                        <button class="btn btn-sm btn-outline-danger"
+                                                @onclick="() => DeleteAsync(meal.Id)" disabled="@isBusy">
+                                            Remove
+                                        </button>
+                                    </td>
+                                </tr>
                             }
-                        </td>
-                        <td>@meal.Calories</td>
-                        <td>@meal.Protein_g g</td>
-                        <td>@meal.Carbs_g g</td>
-                        <td>@meal.Fat_g g</td>
-                        <td>
-                            <button class="btn btn-sm btn-outline-secondary me-1"
-                                    @onclick="() => SaveFavorite(meal.Id)" disabled="@isBusy">
-                                ☆ Save
-                            </button>
-                            <button class="btn btn-sm btn-outline-danger"
-                                    @onclick="() => DeleteAsync(meal.Id)" disabled="@isBusy">
-                                Remove
-                            </button>
-                        </td>
-                    </tr>
-                }
-            </tbody>
-        </table>
-    }
+                        </tbody>
+                    </table>
+                </div>
+            }
+        </section>
+    </div>
 }
 
 @code {

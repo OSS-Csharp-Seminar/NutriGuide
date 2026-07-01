@@ -31,128 +31,137 @@
 }
 else
 {
-    <EditForm Model="model" OnValidSubmit="SaveAsync" style="max-width: 480px;">
-        <DataAnnotationsValidator />
-
-        <div class="mb-3">
-            <label class="form-label">Gender</label>
-            <InputSelect class="form-select" @bind-Value="model.Gender">
-                @foreach (var g in Enum.GetValues<Gender>())
-                {
-                    <option value="@g">@g</option>
-                }
-            </InputSelect>
-        </div>
-
-        <div class="mb-3">
-            <label class="form-label">Age</label>
-            <InputNumber class="form-control" @bind-Value="model.Age" />
-            <ValidationMessage For="() => model.Age" class="text-danger small" />
-        </div>
-
-        <div class="mb-3">
-            <label class="form-label">Height (cm)</label>
-            <InputNumber class="form-control" @bind-Value="model.Height_cm" />
-            <ValidationMessage For="() => model.Height_cm" class="text-danger small" />
-        </div>
-
-        <div class="mb-3">
-            <label class="form-label">Weight (kg)</label>
-            <InputNumber class="form-control" @bind-Value="model.Weight_kg" />
-            <ValidationMessage For="() => model.Weight_kg" class="text-danger small" />
-        </div>
-
-        <div class="mb-3">
-            <label class="form-label">Activity level</label>
-            <InputSelect class="form-select" @bind-Value="model.ActivityLevel">
-                @foreach (var a in Enum.GetValues<ActivityLevel>())
-                {
-                    <option value="@a">@a</option>
-                }
-            </InputSelect>
-        </div>
-
-        <div class="mb-3">
-            <label class="form-label">Goal</label>
-            <InputSelect class="form-select" @bind-Value="model.Goal">
-                @foreach (var goal in Enum.GetValues<Goal>())
-                {
-                    <option value="@goal">@goal</option>
-                }
-            </InputSelect>
-        </div>
-
-        <button class="btn btn-primary" type="submit" disabled="@isBusy">
-            @(isBusy ? "Saving…" : (isEditMode ? "Save changes" : "Create profile"))
-        </button>
-    </EditForm>
-
-    @if (savedMessage is not null)
-    {
-        <div class="alert alert-success mt-3">@savedMessage</div>
-    }
-    @if (error is not null)
-    {
-        <div class="alert alert-danger mt-3">@error</div>
-    }
-
-    <section class="mt-5" style="max-width: 640px;">
-        <h2 class="h4">Discord bot</h2>
-        @if (isDiscordLinked)
-        {
-            <p class="text-muted">
-                Discord logging is linked for this account. Remove it if you want to connect a different Discord account.
-            </p>
-            <div class="d-flex gap-2 flex-wrap align-items-center mb-3">
-                <button class="btn btn-outline-primary" type="button" disabled>
-                    Discord connected
-                </button>
-                <button class="btn btn-outline-danger" type="button" @onclick="RemoveDiscordLink" disabled="@isRemovingDiscordLink">
-                    @(isRemovingDiscordLink ? "Removing..." : "Remove")
-                </button>
+    <div class="profile-workspace">
+        <section class="profile-card profile-details-card">
+            <div class="profile-card-heading">
+                <span class="eyebrow">Vitals</span>
+                <h2>Body profile</h2>
             </div>
-        }
-        else
-        {
-            <p class="text-muted">
-                Generate a one-time command, copy it, then paste it in Discord to link your account.
-            </p>
 
-            <button class="btn btn-outline-primary mb-3" type="button" @onclick="GenerateDiscordLinkCommand" disabled="@isGeneratingDiscordCode">
-                @(isGeneratingDiscordCode ? "Generating..." : "Generate Discord link command")
-            </button>
+            <EditForm Model="model" OnValidSubmit="SaveAsync">
+                <DataAnnotationsValidator />
 
-            @if (discordLinkCommand is not null)
+                <div class="profile-form-grid">
+                    <div class="mb-3">
+                        <label class="form-label">Gender</label>
+                        <InputSelect class="form-select" @bind-Value="model.Gender">
+                            @foreach (var g in Enum.GetValues<Gender>())
+                            {
+                                <option value="@g">@g</option>
+                            }
+                        </InputSelect>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Age</label>
+                        <InputNumber class="form-control" @bind-Value="model.Age" />
+                        <ValidationMessage For="() => model.Age" class="text-danger small" />
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Height (cm)</label>
+                        <InputNumber class="form-control" @bind-Value="model.Height_cm" />
+                        <ValidationMessage For="() => model.Height_cm" class="text-danger small" />
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Weight (kg)</label>
+                        <InputNumber class="form-control" @bind-Value="model.Weight_kg" />
+                        <ValidationMessage For="() => model.Weight_kg" class="text-danger small" />
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Activity level</label>
+                        <InputSelect class="form-select" @bind-Value="model.ActivityLevel">
+                            @foreach (var a in Enum.GetValues<ActivityLevel>())
+                            {
+                                <option value="@a">@a</option>
+                            }
+                        </InputSelect>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Goal</label>
+                        <InputSelect class="form-select" @bind-Value="model.Goal">
+                            @foreach (var goal in Enum.GetValues<Goal>())
+                            {
+                                <option value="@goal">@goal</option>
+                            }
+                        </InputSelect>
+                    </div>
+                </div>
+
+                <button class="btn btn-primary" type="submit" disabled="@isBusy">
+                    @(isBusy ? "Saving…" : (isEditMode ? "Save changes" : "Create profile"))
+                </button>
+            </EditForm>
+
+            @if (savedMessage is not null)
             {
-                <label class="form-label">Command to paste in Discord</label>
-                <div class="input-group">
-                    <input class="form-control" value="@discordLinkCommand" readonly />
-                    <button class="btn btn-outline-secondary" type="button" @onclick="CopyDiscordLinkCommand">
-                        Copy
+                <div class="alert alert-success mt-3">@savedMessage</div>
+            }
+            @if (error is not null)
+            {
+                <div class="alert alert-danger mt-3">@error</div>
+            }
+        </section>
+
+        <section class="profile-card discord-card">
+            <div class="profile-card-heading">
+                <span class="eyebrow">Connection</span>
+                <h2>Discord bot</h2>
+            </div>
+
+            @if (isDiscordLinked)
+            {
+                <p>
+                    Discord logging is linked for this account. Remove it if you want to connect a different Discord account.
+                </p>
+                <div class="d-flex gap-2 flex-wrap align-items-center mb-3">
+                    <button class="btn btn-outline-primary" type="button" disabled>
+                        Discord connected
                     </button>
-                    <button class="btn btn-outline-primary" type="button" @onclick="RefreshDiscordLinkStatus">
-                        Check status
+                    <button class="btn btn-outline-danger" type="button" @onclick="RemoveDiscordLink" disabled="@isRemovingDiscordLink">
+                        @(isRemovingDiscordLink ? "Removing..." : "Remove")
                     </button>
                 </div>
-                <div class="form-text">This command expires in 10 minutes.</div>
             }
-        }
+            else
+            {
+                <p>
+                    Generate a one-time command, copy it, then paste it in Discord to link your account.
+                </p>
 
-        @if (discordMessage is not null)
-        {
-            <div class="alert alert-info mt-3">@discordMessage</div>
-        }
-        @if (discordError is not null)
-        {
-            <div class="alert alert-danger mt-3">@discordError</div>
-        }
+                <button class="btn btn-outline-primary mb-3" type="button" @onclick="GenerateDiscordLinkCommand" disabled="@isGeneratingDiscordCode">
+                    @(isGeneratingDiscordCode ? "Generating..." : "Generate Discord link command")
+                </button>
 
-        <hr class="my-4" style="max-width: 480px;" />
-        <form method="post" action="/Account/logout" style="max-width: 480px;">
-            <AntiforgeryToken />
-            <button class="btn btn-outline-danger" type="submit">Log out</button>
-        </form>
-    </section>
+                @if (discordLinkCommand is not null)
+                {
+                    <label class="form-label">Command to paste in Discord</label>
+                    <div class="input-group discord-command-group">
+                        <input class="form-control" value="@discordLinkCommand" readonly />
+                        <button class="btn btn-outline-secondary" type="button" @onclick="CopyDiscordLinkCommand">
+                            Copy
+                        </button>
+                        <button class="btn btn-outline-primary" type="button" @onclick="RefreshDiscordLinkStatus">
+                            Check status
+                        </button>
+                    </div>
+                    <div class="form-text">This command expires in 10 minutes.</div>
+                }
+            }
+
+            @if (discordMessage is not null)
+            {
+                <div class="alert alert-info mt-3">@discordMessage</div>
+            }
+            @if (discordError is not null)
+            {
+                <div class="alert alert-danger mt-3">@discordError</div>
+            }
+        </section>
+    </div>
 }
 
 @code {

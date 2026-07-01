@@ -68,6 +68,25 @@
     background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='white' viewBox='0 0 16 16'%3E%3Cpath fill-rule='evenodd' d='M0 0h1v15h15v1H0V0zm14.817 3.113a.5.5 0 0 1 .07.704l-4.5 5.5a.5.5 0 0 1-.74.037L7.06 6.767l-3.656 5.027a.5.5 0 0 1-.808-.588l4-5.5a.5.5 0 0 1 .758-.06l2.609 2.61 4.15-5.073a.5.5 0 0 1 .704-.07z'/%3E%3C/svg%3E");
 }
 
+.bi-box-arrow-right-nav-menu {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='white' viewBox='0 0 16 16'%3E%3Cpath fill-rule='evenodd' d='M10 12.5a.5.5 0 0 1-.5.5h-8A1.5 1.5 0 0 1 0 11.5v-7A1.5 1.5 0 0 1 1.5 3h8a.5.5 0 0 1 0 1h-8a.5.5 0 0 0-.5.5v7a.5.5 0 0 0 .5.5h8a.5.5 0 0 1 .5.5z'/%3E%3Cpath fill-rule='evenodd' d='M15.854 8.354a.5.5 0 0 0 0-.708l-3-3a.5.5 0 0 0-.708.708L14.293 7.5H5.5a.5.5 0 0 0 0 1h8.793l-2.147 2.146a.5.5 0 0 0 .708.708l3-3z'/%3E%3C/svg%3E");
+}
+
+.nav.flex-column {
+    min-height: 100%;
+}
+
+.nav-primary {
+    padding-bottom: 1rem;
+}
+
+.nav-bottom {
+    margin-top: auto;
+    padding: 0.85rem 0 1rem;
+    border-top: 1px solid rgba(255,255,255,0.14);
+    background: linear-gradient(180deg, rgba(255,255,255,0.04), rgba(0,0,0,0.12));
+}
+
 .nav-item {
     font-size: 0.92rem;
     padding-bottom: 0.5rem;
@@ -103,6 +122,39 @@
         color: white;
     }
 
+.account-link {
+    min-width: 0;
+}
+
+.account-link-text {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.logout-item form {
+    margin: 0;
+}
+
+.logout-link {
+    color: #F3D6CF;
+    background: none;
+    border: none;
+    border-radius: 8px;
+    height: 3rem;
+    display: flex;
+    align-items: center;
+    line-height: 3rem;
+    width: 100%;
+    padding: 0 1rem;
+    text-align: left;
+}
+
+.logout-link:hover {
+    color: white;
+    background-color: rgba(217,107,82,0.22);
+}
+
 .nav-scrollable {
     display: none;
 }
@@ -120,5 +172,9 @@
         display: block;
         height: calc(100vh - 3.5rem);
         overflow-y: auto;
+    }
+
+    .nav-scrollable .nav {
+        min-height: calc(100vh - 3.5rem);
     }
 }

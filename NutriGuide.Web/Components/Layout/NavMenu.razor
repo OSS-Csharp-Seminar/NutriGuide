@@ -8,35 +8,59 @@
 
 <div class="nav-scrollable" onclick="document.querySelector('.navbar-toggler').click()">
     <nav class="nav flex-column">
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="" Match="NavLinkMatch.All">
-                <span class="bi bi-house-door-fill-nav-menu" aria-hidden="true"></span> Home
-            </NavLink>
+        <div class="nav-primary">
+            <div class="nav-item px-3">
+                <NavLink class="nav-link" href="" Match="NavLinkMatch.All">
+                    <span class="bi bi-house-door-fill-nav-menu" aria-hidden="true"></span> Home
+                </NavLink>
+            </div>
+            <div class="nav-item px-3">
+                <NavLink class="nav-link" href="log-meal">
+                    <span class="bi bi-meal-nav-menu" aria-hidden="true"></span> Log meal
+                </NavLink>
+            </div>
+            <div class="nav-item px-3">
+                <NavLink class="nav-link" href="history">
+                    <span class="bi bi-calendar-nav-menu" aria-hidden="true"></span> History
+                </NavLink>
+            </div>
+            <div class="nav-item px-3">
+                <NavLink class="nav-link" href="wellness">
+                    <span class="bi bi-heart-pulse-nav-menu" aria-hidden="true"></span> Wellness
+                </NavLink>
+            </div>
+            <div class="nav-item px-3">
+                <NavLink class="nav-link" href="weekly">
+                    <span class="bi bi-graph-up-nav-menu" aria-hidden="true"></span> Weekly report
+                </NavLink>
+            </div>
         </div>
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="profile">
-                <span class="bi bi-person-fill-nav-menu" aria-hidden="true"></span> Profile
-            </NavLink>
-        </div>
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="log-meal">
-                <span class="bi bi-meal-nav-menu" aria-hidden="true"></span> Log meal
-            </NavLink>
-        </div>
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="history">
-                <span class="bi bi-calendar-nav-menu" aria-hidden="true"></span> History
-            </NavLink>
-        </div>
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="wellness">
-                <span class="bi bi-heart-pulse-nav-menu" aria-hidden="true"></span> Wellness
-            </NavLink>
-        </div>
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="weekly">
-                <span class="bi bi-graph-up-nav-menu" aria-hidden="true"></span> Weekly report
-            </NavLink>
+
+        <div class="nav-bottom">
+            <AuthorizeView>
+                <Authorized Context="authState">
+                    <div class="nav-item px-3">
+                        <NavLink class="nav-link account-link" href="profile">
+                            <span class="bi bi-person-fill-nav-menu" aria-hidden="true"></span>
+                            <span class="account-link-text">@GetUserDisplayName(authState.User.Identity?.Name)</span>
+                        </NavLink>
+                    </div>
+                    <div class="nav-item px-3 logout-item">
+                        <form method="post" action="/Account/logout">
+                            <AntiforgeryToken />
+                            <button class="nav-link logout-link" type="submit">
+                                <span class="bi bi-box-arrow-right-nav-menu" aria-hidden="true"></span>
+                                Log out
+                            </button>
+                        </form>
+                    </div>
+                </Authorized>
+            </AuthorizeView>
         </div>
     </nav>
 </div>
+
+@code {
+    private static string GetUserDisplayName(string? name)
+        => string.IsNullOrWhiteSpace(name) ? "Profile" : name;
+}
