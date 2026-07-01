@@ -17,18 +17,43 @@
 }
 else
 {
-    <div class="d-flex justify-content-between align-items-center mb-3" style="max-width: 560px;">
-        <button class="btn btn-sm btn-outline-secondary" @onclick="PrevWeek">‹ Previous</button>
-        <strong>@report.WeekStart.ToString("d MMM") – @report.WeekEnd.ToString("d MMM yyyy")</strong>
-        <button class="btn btn-sm btn-outline-secondary" @onclick="NextWeek" disabled="@IsCurrentWeek">Next ›</button>
-    </div>
+    <div class="weekly-shell">
+        <section class="weekly-panel weekly-hero-panel">
+            <div class="weekly-panel-heading">
+                <div>
+                    <span class="eyebrow">Report window</span>
+                    <h2>@report.WeekStart.ToString("d MMM") - @report.WeekEnd.ToString("d MMM yyyy")</h2>
+                </div>
+                <div class="weekly-controls">
+                    <button class="btn btn-sm btn-outline-secondary" @onclick="PrevWeek">‹ Previous</button>
+                    <button class="btn btn-sm btn-outline-secondary" @onclick="NextWeek" disabled="@IsCurrentWeek">Next ›</button>
+                </div>
+            </div>
 
-    <div class="card mb-3" style="max-width: 560px;">
-        <div class="card-body">
-            <h2 class="h5 mb-2">Weekly summary</h2>
+            <div class="weekly-kpi-row">
+                <div>
+                    <span>@report.DaysLogged</span>
+                    <small>days logged</small>
+                </div>
+                <div>
+                    <span>@report.CalorieAdherence_pct%</span>
+                    <small>calorie target</small>
+                </div>
+                <div>
+                    <span>@report.AvgCalories</span>
+                    <small>avg kcal/day</small>
+                </div>
+            </div>
+        </section>
+
+        <section class="weekly-panel weekly-summary-panel">
+            <div class="weekly-panel-heading compact">
+                <span class="eyebrow">AI overview</span>
+                <h2>Weekly summary</h2>
+            </div>
             @if (summary is null)
             {
-                <p class="text-muted small mb-2">Get an AI overview of how your week went.</p>
+                <p>Get a short overview of the week based on meals, targets, and progress signals.</p>
                 <button class="btn btn-outline-primary btn-sm"
                         @onclick="GenerateSummary" disabled="@isSummarizing">
                     @(isSummarizing ? "Writing…" : "Generate summary")
@@ -36,7 +61,7 @@ else
             }
             else
             {
-                <p class="mb-2">@summary</p>
+                <p>@summary</p>
                 <button class="btn btn-outline-secondary btn-sm"
                         @onclick="GenerateSummary" disabled="@isSummarizing">
                     @(isSummarizing ? "Writing…" : "Regenerate")
@@ -46,116 +71,62 @@ else
             {
                 <div class="text-danger small mt-2">@summaryError</div>
             }
-        </div>
-    </div>
+        </section>
 
-    @if (report.DaysLogged == 0)
-    {
-        <p>No meals logged this week.</p>
-    }
-    else
-    {
-        <p class="text-muted small">Based on @report.DaysLogged day(s) with logged meals.</p>
-
-        <div class="card mb-3" style="max-width: 560px;">
-            <div class="card-body">
-                <h2 class="h5 mb-3">Daily averages this week</h2>
-                <table class="table mb-0">
-                    <tbody>
-                        <tr><td>Calories</td><td class="text-end">@report.AvgCalories kcal</td></tr>
-                        <tr><td>Protein</td><td class="text-end">@report.AvgProtein_g g</td></tr>
-                        <tr><td>Carbs</td><td class="text-end">@report.AvgCarbs_g g</td></tr>
-                        <tr><td>Fat</td><td class="text-end">@report.AvgFat_g g</td></tr>
-                        <tr><td>Fiber</td><td class="text-end">@report.AvgFiber_g g</td></tr>
-                    </tbody>
-                </table>
-            </div>
-        </div>
-
-        @if (report.TargetCalories > 0)
+        @if (report.DaysLogged == 0)
         {
-            <div class="card mb-3" style="max-width: 560px;">
-                <div class="card-body">
-                    <h2 class="h6 mb-2">Calorie adherence</h2>
-                    <p class="mb-2">
-                        You averaged <strong>@report.AvgCalories</strong> kcal/day against a target of
-                        <strong>@report.TargetCalories</strong> kcal — that's @report.CalorieAdherence_pct% of target.
-                    </p>
-                    <div class="progress" style="height: 10px;">
-                        <div class="progress-bar @(report.CalorieAdherence_pct > 110 ? "bg-warning" : "bg-success")"
-                             role="progressbar"
-                             style="width: @(Math.Min(100, report.CalorieAdherence_pct))%;"></div>
-                    </div>
+            <section class="weekly-panel">
+                <div class="empty-meals">
+                    <strong>No meals logged this week.</strong>
+                    <span>Log meals through the week to unlock averages and adherence.</span>
                 </div>
-            </div>
+            </section>
         }
-    }
-
-    <div class="card" style="max-width: 560px;">
-        <div class="card-body">
-            <h2 class="h5 mb-3">Weight progress</h2>
-
-            @if (report.ThisWeekWeight_kg is null)
-            {
-                <p class="text-muted">No weight recorded for this week yet. Enter your weight below.</p>
-            }
-            else
-            {
-                <p class="mb-1">
-                    This week: <strong>@report.ThisWeekWeight_kg kg</strong>
-                    @if (report.StartingWeight_kg is not null && report.StartingWeight_kg != report.ThisWeekWeight_kg)
-                    {
-                        <span class="text-muted">(started at @report.StartingWeight_kg kg)</span>
-                    }
-                </p>
-                @if (report.WeightChange_kg is not null && report.WeightChange_kg != 0)
-                {
-                    <p class="mb-2">
-                        <span>
-                            @(report.WeightChange_kg < 0 ? "Down" : "Up")
-                            <strong>@Math.Abs(report.WeightChange_kg!.Value) kg</strong> since you started.
-                        </span>
-                        @if (report.OnTrack == true)
-                        {
-                            <span class="text-success">On track with your @report.Goal goal. 👍</span>
-                        }
-                        else if (report.OnTrack == false)
-                        {
-                            <span class="text-warning">Not matching your @report.Goal goal yet.</span>
-                        }
-                    </p>
-                }
-            }
-
-            @if (report.CanLogWeight)
-            {
-                <div class="input-group mt-2" style="max-width: 280px;">
-                    <input class="form-control" type="number" step="0.1" min="20" max="450"
-                           placeholder="Weight this week (kg)" @bind="newWeight" disabled="@isBusy" />
-                    <button class="btn btn-primary" @onclick="LogWeight"
-                            disabled="@(isBusy || newWeight is null)">
-                        @(isBusy ? "Saving…" : "Save weight")
-                    </button>
+        else
+        {
+            <section class="weekly-panel weekly-averages-panel">
+                <div class="weekly-panel-heading compact">
+                    <span class="eyebrow">Nutrition</span>
+                    <h2>Daily averages</h2>
                 </div>
-            }
-            else
+                <div class="weekly-macro-grid">
+                    <div><span>@report.AvgCalories</span><small>kcal</small></div>
+                    <div><span>@report.AvgProtein_g g</span><small>protein</small></div>
+                    <div><span>@report.AvgCarbs_g g</span><small>carbs</small></div>
+                    <div><span>@report.AvgFat_g g</span><small>fat</small></div>
+                    <div><span>@report.AvgFiber_g g</span><small>fiber</small></div>
+                </div>
+            </section>
+
+            @if (report.TargetCalories > 0)
             {
-                <p class="text-muted small mb-0">This week is before you started using the app.</p>
+                <section class="weekly-panel weekly-adherence-panel">
+                    <div class="weekly-panel-heading">
+                        <div>
+                            <span class="eyebrow">Calories</span>
+                            <h2>Adherence</h2>
+                        </div>
+                        <span class="status-pill @(report.CalorieAdherence_pct > 110 ? "attention" : "success")">
+                            @report.CalorieAdherence_pct%
+                        </span>
+                    </div>
+                    <p>
+                        You averaged <strong>@report.AvgCalories</strong> kcal/day against a target of
+                        <strong>@report.TargetCalories</strong> kcal.
+                    </p>
+                    <div class="weekly-adherence-track">
+                        <span class="@(report.CalorieAdherence_pct > 110 ? "attention" : "")"
+                              style="width: @(Math.Min(100, report.CalorieAdherence_pct))%;"></span>
+                    </div>
+                </section>
             }
-            @if (weightError is not null)
-            {
-                <div class="text-danger small mt-2">@weightError</div>
-            }
-        </div>
+        }
     </div>
 }
 
 @code {
     private WeeklyReportDto? report;
     private DateOnly anchorDate = DateOnly.FromDateTime(DateTime.UtcNow);
-    private decimal? newWeight;
-    private bool isBusy;
-    private string? weightError;
     private string? summary;
     private bool isSummarizing;
     private string? summaryError;
@@ -188,21 +159,6 @@ else
             anchorDate = DateOnly.FromDateTime(DateTime.UtcNow);
         summary = null;
         await LoadAsync();
-    }
-
-    private async Task LogWeight()
-    {
-        if (UserId is null || newWeight is null || isBusy) return;
-        isBusy = true;
-        weightError = null;
-        try
-        {
-            await ReportService.LogWeightAsync(UserId, anchorDate, newWeight.Value);
-            newWeight = null;
-            await LoadAsync();
-        }
-        catch (Exception ex) { weightError = ex.Message; }
-        finally { isBusy = false; }
     }
 
     private async Task GenerateSummary()

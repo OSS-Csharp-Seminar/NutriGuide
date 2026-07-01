@@ -188,7 +188,7 @@ window.nutriDashboard = (() => {
         });
     }
 
-    function renderTrendCharts(calorieCanvasId, macroCanvasId, labels, calories, baselineCalories, protein, carbs, fat, fiber) {
+    function renderTrendCharts(calorieCanvasId, macroCanvasId, weightCanvasId, labels, calories, baselineCalories, protein, carbs, fat, fiber, weightLabels, weights) {
         renderLineChart(
             calorieCanvasId,
             labels,
@@ -208,6 +208,14 @@ window.nutriDashboard = (() => {
                 lineDataset("Fiber", fiber, colors.terra)
             ],
             "g");
+
+        renderLineChart(
+            weightCanvasId,
+            weightLabels,
+            [
+                lineDataset("Weight", weights, colors.terra)
+            ],
+            "kg");
     }
 
     return { renderBalanceCharts, renderTrendCharts };

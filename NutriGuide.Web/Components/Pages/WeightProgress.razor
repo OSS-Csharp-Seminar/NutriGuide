@@ -1,0 +1,196 @@
+@page "/weight-progress"
+@attribute [Authorize]
+@rendermode InteractiveServer
+@inherits RequireProfile
+@using NutriGuide.Application.DTOs.WeeklyReport
+@using NutriGuide.Application.Interfaces
+@inject IWeeklyReportService ReportService
+
+<PageTitle>Weight progress</PageTitle>
+
+<h1>Weight progress</h1>
+<p class="text-muted">Track your weekly weight and compare it with your profile goal.</p>
+
+@if (!ProfileReady || report is null)
+{
+    <p><em>Loading...</em></p>
+}
+else
+{
+    <div class="weight-shell">
+        <section class="weight-panel weight-hero-panel">
+            <div class="weight-panel-heading">
+                <div>
+                    <span class="eyebrow">Week</span>
+                    <h2>@report.WeekStart.ToString("d MMM") - @report.WeekEnd.ToString("d MMM yyyy")</h2>
+                </div>
+                <div class="weekly-controls">
+                    <button class="btn btn-sm btn-outline-secondary" @onclick="PrevWeek">‹ Previous</button>
+                    <button class="btn btn-sm btn-outline-secondary" @onclick="NextWeek" disabled="@IsCurrentWeek">Next ›</button>
+                </div>
+            </div>
+
+            <div class="weight-kpi-row">
+                <div>
+                    <span>@WeightText</span>
+                    <small>this week</small>
+                </div>
+                <div>
+                    <span>@ChangeText</span>
+                    <small>since start</small>
+                </div>
+                <div>
+                    <span>@GoalText</span>
+                    <small>profile goal</small>
+                </div>
+            </div>
+        </section>
+
+        <section class="weight-panel weight-log-panel">
+            <div class="weight-panel-heading compact">
+                <span class="eyebrow">Entry</span>
+                <h2>Log weekly weight</h2>
+            </div>
+
+            @if (report.ThisWeekWeight_kg is null)
+            {
+                <p>No weight recorded for this week yet.</p>
+            }
+            else
+            {
+                <p>
+                    This week is recorded as <strong>@report.ThisWeekWeight_kg kg</strong>.
+                    @if (report.StartingWeight_kg is not null && report.StartingWeight_kg != report.ThisWeekWeight_kg)
+                    {
+                        <span class="text-muted"> Starting weight: @report.StartingWeight_kg kg.</span>
+                    }
+                </p>
+            }
+
+            @if (report.CanLogWeight)
+            {
+                <div class="weight-input-row">
+                    <input class="form-control" type="number" step="0.1" min="20" max="450"
+                           placeholder="Weight this week (kg)" @bind="newWeight" disabled="@isBusy" />
+                    <button class="btn btn-primary" @onclick="LogWeight"
+                            disabled="@(isBusy || newWeight is null)">
+                        @(isBusy ? "Saving..." : "Save weight")
+                    </button>
+                </div>
+            }
+            else
+            {
+                <p class="text-muted small mb-0">This week is before you started using the app.</p>
+            }
+            @if (weightError is not null)
+            {
+                <div class="text-danger small mt-2">@weightError</div>
+            }
+        </section>
+
+        <section class="weight-panel weight-status-panel">
+            <div class="weight-panel-heading compact">
+                <span class="eyebrow">Trend</span>
+                <h2>Goal alignment</h2>
+            </div>
+
+            @if (report.WeightChange_kg is null)
+            {
+                <div class="empty-meals">
+                    <strong>No trend yet.</strong>
+                    <span>Record a weekly weight to see how it compares with your starting profile.</span>
+                </div>
+            }
+            else
+            {
+                <div class="weight-trend-card @(report.OnTrack == true ? "success" : report.OnTrack == false ? "attention" : "")">
+                    <strong>@TrendHeadline</strong>
+                    <span>@TrendDescription</span>
+                </div>
+            }
+        </section>
+    </div>
+}
+
+@code {
+    private WeeklyReportDto? report;
+    private DateOnly anchorDate = DateOnly.FromDateTime(DateTime.UtcNow);
+    private decimal? newWeight;
+    private bool isBusy;
+    private string? weightError;
+
+    private bool IsCurrentWeek =>
+        anchorDate >= DateOnly.FromDateTime(DateTime.UtcNow).AddDays(-6);
+
+    private string WeightText =>
+        report?.ThisWeekWeight_kg is null ? "--" : $"{report.ThisWeekWeight_kg:0.0} kg";
+
+    private string ChangeText =>
+        report?.WeightChange_kg is null ? "--" : $"{(report.WeightChange_kg > 0 ? "+" : "")}{report.WeightChange_kg:0.0} kg";
+
+    private string GoalText =>
+        string.IsNullOrWhiteSpace(report?.Goal) ? "--" : report.Goal;
+
+    private string TrendHeadline => report?.OnTrack switch
+    {
+        true => "On track",
+        false => "Needs attention",
+        _ => "Trend recorded"
+    };
+
+    private string TrendDescription
+    {
+        get
+        {
+            if (report?.WeightChange_kg is null)
+                return "Record your weight to unlock progress feedback.";
+
+            var change = report.WeightChange_kg.Value;
+            if (change < 0)
+                return $"Down {Math.Abs(change):0.0} kg since you started.";
+            if (change > 0)
+                return $"Up {change:0.0} kg since you started.";
+            return "No change from your starting weight yet.";
+        }
+    }
+
+    protected override async Task OnProfileReadyAsync()
+    {
+        await LoadAsync();
+    }
+
+    private async Task LoadAsync()
+    {
+        if (UserId is null) return;
+        report = await ReportService.GetWeekAsync(UserId, anchorDate);
+    }
+
+    private async Task PrevWeek()
+    {
+        anchorDate = anchorDate.AddDays(-7);
+        await LoadAsync();
+    }
+
+    private async Task NextWeek()
+    {
+        anchorDate = anchorDate.AddDays(7);
+        if (anchorDate > DateOnly.FromDateTime(DateTime.UtcNow))
+            anchorDate = DateOnly.FromDateTime(DateTime.UtcNow);
+        await LoadAsync();
+    }
+
+    private async Task LogWeight()
+    {
+        if (UserId is null || newWeight is null || isBusy) return;
+        isBusy = true;
+        weightError = null;
+        try
+        {
+            await ReportService.LogWeightAsync(UserId, anchorDate, newWeight.Value);
+            newWeight = null;
+            await LoadAsync();
+        }
+        catch (Exception ex) { weightError = ex.Message; }
+        finally { isBusy = false; }
+    }
+}

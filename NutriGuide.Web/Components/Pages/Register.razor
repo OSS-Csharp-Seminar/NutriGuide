@@ -1,33 +1,55 @@
-﻿@page "/register"
-@layout MainLayout
+@page "/register"
+@layout AuthLayout
 
 <PageTitle>Register</PageTitle>
 
-<h1>Create account</h1>
-
-@if (Error is not null)
-{
-    <div class="alert alert-danger">@Error</div>
-}
-
-<form method="post" action="/Account/register" style="max-width: 360px;">
-    <AntiforgeryToken />
-    <div class="mb-3">
-        <label class="form-label">Email</label>
-        <input class="form-control" type="email" name="email" required />
+<section class="auth-shell">
+    <div class="auth-brand-panel">
+        <a class="auth-logo" href="/">
+            <span class="auth-logo-mark" aria-hidden="true">N</span>
+            <span>
+                <strong>NutriGuide</strong>
+                <small>AI nutrition</small>
+            </span>
+        </a>
+        <div>
+            <span class="eyebrow">Start fresh</span>
+            <h1>Create account</h1>
+            <p>Build your profile once, then let NutriGuide track meals, targets, wellness, and weekly progress.</p>
+        </div>
     </div>
-    <div class="mb-3">
-        <label class="form-label">Username</label>
-        <input class="form-control" type="text" name="userName" required />
-    </div>
-    <div class="mb-3">
-        <label class="form-label">Password</label>
-        <input class="form-control" type="password" name="password" required />
-    </div>
-    <button class="btn btn-primary" type="submit">Register</button>
-</form>
 
-<p class="mt-3">Already have an account? <a href="/login">Log in</a></p>
+    <div class="auth-card">
+        <div class="auth-card-heading">
+            <span class="eyebrow">Account</span>
+            <h2>Register</h2>
+        </div>
+
+        @if (Error is not null)
+        {
+            <div class="alert alert-danger">@Error</div>
+        }
+
+        <form method="post" action="/Account/register">
+            <AntiforgeryToken />
+            <div class="mb-3">
+                <label class="form-label">Email</label>
+                <input class="form-control" type="email" name="email" autocomplete="email" required />
+            </div>
+            <div class="mb-3">
+                <label class="form-label">Username</label>
+                <input class="form-control" type="text" name="userName" autocomplete="username" required />
+            </div>
+            <div class="mb-3">
+                <label class="form-label">Password</label>
+                <input class="form-control" type="password" name="password" autocomplete="new-password" required />
+            </div>
+            <button class="btn btn-primary auth-submit" type="submit">Create account</button>
+        </form>
+
+        <p class="auth-switch">Already have an account? <a href="/login">Log in</a></p>
+    </div>
+</section>
 
 @code {
     [SupplyParameterFromQuery] public string? Error { get; set; }

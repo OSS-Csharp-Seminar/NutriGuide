@@ -289,12 +289,21 @@ else
                 </label>
             </div>
 
-            @if (statsData.Count == 0)
+            @if (statsMode == "balance" && statsData.Count == 0)
             {
                 <article class="dash-card empty-stats-card pop-in">
                     <div class="empty-meals">
                         <strong>No logged days in this range.</strong>
                         <span>Choose another range or log a meal to unlock the charts.</span>
+                    </div>
+                </article>
+            }
+            else if (statsMode == "trends" && statsData.Count == 0 && weightTrendData.Count == 0)
+            {
+                <article class="dash-card empty-stats-card pop-in">
+                    <div class="empty-meals">
+                        <strong>No trend data in this range.</strong>
+                        <span>Log meals or record weekly weight to unlock the charts.</span>
                     </div>
                 </article>
             }
@@ -371,6 +380,30 @@ else
                     <article class="dash-card chart-card pop-in delay-1">
                         <div class="card-heading">
                             <div>
+                                <span class="eyebrow">Weekly weigh-ins</span>
+                                <h2>Weight over time</h2>
+                            </div>
+                            <span class="status-pill">@weightTrendData.Count point@(weightTrendData.Count == 1 ? "" : "s")</span>
+                        </div>
+
+                        @if (weightTrendData.Count == 0)
+                        {
+                            <div class="empty-meals">
+                                <strong>No weight entries in this range.</strong>
+                                <span>Use Weight progress to record weekly weigh-ins.</span>
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="chart-wrap trend-chart">
+                                <canvas id="weightTrendChart" aria-label="Weight over time"></canvas>
+                            </div>
+                        }
+                    </article>
+
+                    <article class="dash-card chart-card macro-trend-card pop-in delay-2">
+                        <div class="card-heading">
+                            <div>
                                 <span class="eyebrow">@StatsRangeLabel</span>
                                 <h2>Macros over time</h2>
                             </div>
@@ -382,7 +415,7 @@ else
                         </div>
                     </article>
 
-                    <article class="dash-card stats-summary-card pop-in delay-2">
+                    <article class="dash-card stats-summary-card pop-in delay-3">
                         <div class="card-heading">
                             <div>
                                 <span class="eyebrow">Averages</span>
@@ -419,6 +452,7 @@ else
     private AiRecommendationDto? recommendation;
     private List<FavoriteMealDto> favorites = new();
     private List<DailyNutritionStatsDto> statsData = new();
+    private List<WeightTrendPoint> weightTrendData = new();
     private HashSet<DateOnly> loggedDates = new();
     private bool isBusy;
     private bool isRecommending;
@@ -599,6 +633,35 @@ else
         };
 
         statsData = await MealLogService.GetStatsAsync(UserId, from, today);
+        await LoadWeightTrendAsync(from, today);
+    }
+
+    private async Task LoadWeightTrendAsync(DateOnly? from, DateOnly today)
+    {
+        if (UserId is null) return;
+
+        var start = from ?? today.AddDays(-7 * 25);
+        if (statsRange == "today")
+        {
+            start = today.AddDays(-7 * 7);
+        }
+
+        var firstWeekStart = WeekStart(start);
+        var currentWeekStart = WeekStart(today);
+        var points = new List<WeightTrendPoint>();
+
+        for (var week = firstWeekStart; week <= currentWeekStart; week = week.AddDays(7))
+        {
+            var weekly = await WeeklyReportService.GetWeekAsync(UserId, week);
+            if (weekly.ThisWeekWeight_kg is not null)
+            {
+                points.Add(new WeightTrendPoint(
+                    weekly.WeekStart.ToString("MMM d"),
+                    (double)weekly.ThisWeekWeight_kg.Value));
+            }
+        }
+
+        weightTrendData = points;
     }
 
     private async Task LogAsync()
@@ -690,7 +753,8 @@ else
 
     private async Task RenderChartAsync()
     {
-        if (statsData.Count == 0) return;
+        if (statsMode == "balance" && statsData.Count == 0) return;
+        if (statsMode == "trends" && statsData.Count == 0 && weightTrendData.Count == 0) return;
 
         if (statsMode == "balance")
         {
@@ -714,13 +778,16 @@ else
                 "nutriDashboard.renderTrendCharts",
                 "calorieTrendChart",
                 "macroTrendChart",
+                "weightTrendChart",
                 statsData.Select(d => d.Date.ToString("MMM d")).ToArray(),
                 statsData.Select(d => d.Calories).ToArray(),
                 statsData.Select(d => d.TargetCalories).ToArray(),
                 statsData.Select(d => Math.Round((double)d.Protein_g, 1)).ToArray(),
                 statsData.Select(d => Math.Round((double)d.Carbs_g, 1)).ToArray(),
                 statsData.Select(d => Math.Round((double)d.Fat_g, 1)).ToArray(),
-                statsData.Select(d => Math.Round((double)d.Fiber_g, 1)).ToArray());
+                statsData.Select(d => Math.Round((double)d.Fiber_g, 1)).ToArray(),
+                weightTrendData.Select(p => p.Label).ToArray(),
+                weightTrendData.Select(p => p.WeightKg).ToArray());
         }
 
         chartRendered = true;
@@ -738,6 +805,13 @@ else
 
     private static string FormatNumber(decimal value) => FormatNumber((double)value);
 
+    private static DateOnly WeekStart(DateOnly date)
+    {
+        var dayOffset = ((int)date.DayOfWeek + 6) % 7;
+        return date.AddDays(-dayOffset);
+    }
+
     private sealed record NutritionMetric(string Label, double Consumed, double Goal, string Unit, string ClassName);
     private sealed record StreakStage(int Day, string Icon, string Scale);
+    private sealed record WeightTrendPoint(string Label, double WeightKg);
 }

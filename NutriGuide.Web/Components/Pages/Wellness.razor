@@ -25,60 +25,114 @@
 }
 else
 {
-    <div class="mb-4" style="max-width: 600px;">
-        <textarea class="form-control mb-2" rows="3"
-                  placeholder="e.g. I've felt tired and a bit bloated since yesterday afternoon"
-                  @bind="symptoms" @bind:event="oninput" disabled="@isBusy"></textarea>
-        <button class="btn btn-primary"
-                @onclick="Analyze"
-                disabled="@(isBusy || string.IsNullOrWhiteSpace(symptoms))">
-            @(isBusy ? "Analyzing…" : "Analyze how I feel")
-        </button>
-        @if (error is not null)
-        {
-            <div class="text-danger mt-2">@error</div>
-        }
-    </div>
-
-    @if (latest is not null)
-    {
-        <div class="card mb-4" style="max-width: 600px;">
-            <div class="card-body">
-                <h2 class="h5">What the AI thinks</h2>
-                <p>@latest.AiAnalysis</p>
-                @if (!string.IsNullOrWhiteSpace(latest.SuggestedMeal))
-                {
-                    <div class="alert alert-success mb-0">
-                        <strong>Suggested meal:</strong> @latest.SuggestedMeal
+    <div class="wellness-shell">
+        <div class="wellness-main">
+            <section class="wellness-panel wellness-entry-panel">
+                <div class="wellness-panel-heading">
+                    <div>
+                        <span class="eyebrow">Check-in</span>
+                        <h2>Tell NutriGuide what's going on</h2>
                     </div>
-                }
-            </div>
-        </div>
-    }
+                    <span class="status-pill attention">48h meal context</span>
+                </div>
 
-    @if (history.Count > 0)
-    {
-        <h2 class="h5">Past check-ins</h2>
-        <div style="max-width: 600px;">
-            @foreach (var entry in history)
+                <textarea class="form-control wellness-textarea"
+                          rows="5"
+                          placeholder="e.g. I've felt tired and a bit bloated since yesterday afternoon"
+                          @bind="symptoms" @bind:event="oninput" disabled="@isBusy"></textarea>
+
+                <div class="wellness-actions">
+                    <button class="btn btn-primary"
+                            @onclick="Analyze"
+                            disabled="@(isBusy || string.IsNullOrWhiteSpace(symptoms))">
+                        @(isBusy ? "Analyzing…" : "Analyze how I feel")
+                    </button>
+                    <span class="small text-muted">Use symptoms, energy, digestion, sleep, or mood.</span>
+                </div>
+
+                @if (error is not null)
+                {
+                    <div class="text-danger mt-2">@error</div>
+                }
+            </section>
+
+            @if (latest is not null)
             {
-                <div class="card mb-2">
-                    <div class="card-body py-2">
-                        <div class="text-muted small">@entry.LoggedAt.ToString("dddd, d MMMM yyyy · HH:mm")</div>
-                        <div><strong>You said:</strong> @entry.Symptoms</div>
-                        @if (!string.IsNullOrWhiteSpace(entry.AiAnalysis))
-                        {
-                            <div class="small mt-1">@entry.AiAnalysis</div>
-                        }
-                        @if (!string.IsNullOrWhiteSpace(entry.SuggestedMeal))
-                        {
-                            <div class="small text-success mt-1">Suggested: @entry.SuggestedMeal</div>
-                        }
+                <section class="wellness-panel wellness-result-panel">
+                    <div class="wellness-panel-heading compact">
+                        <span class="eyebrow">Latest insight</span>
+                        <h2>What the AI thinks</h2>
+                    </div>
+                    <p>@latest.AiAnalysis</p>
+                    @if (!string.IsNullOrWhiteSpace(latest.SuggestedMeal))
+                    {
+                        <div class="alert alert-success mb-0">
+                            <strong>Suggested meal:</strong> @latest.SuggestedMeal
+                        </div>
+                    }
+                </section>
+            }
+
+            <section class="wellness-panel wellness-guide-panel">
+                <div class="wellness-panel-heading compact">
+                    <span class="eyebrow">Useful prompts</span>
+                    <h2>What to include</h2>
+                </div>
+                <div class="wellness-prompt-grid">
+                    <div>
+                        <strong>Energy</strong>
+                        <span>Tired, restless, focused, sleepy.</span>
+                    </div>
+                    <div>
+                        <strong>Digestion</strong>
+                        <span>Bloating, hunger, cravings, heaviness.</span>
+                    </div>
+                    <div>
+                        <strong>Timing</strong>
+                        <span>When it started and what changed.</span>
                     </div>
                 </div>
-            }
+            </section>
         </div>
-    }
+
+        <aside class="wellness-panel wellness-history-panel">
+            <div class="wellness-panel-heading table-heading">
+                <div>
+                    <span class="eyebrow">Timeline</span>
+                    <h2>Wellness journal</h2>
+                </div>
+                <span class="status-pill">@history.Count entries</span>
+            </div>
+
+            @if (history.Count == 0)
+            {
+                <div class="empty-meals wellness-empty-state">
+                    <strong>No wellness entries yet.</strong>
+                    <span>Your check-ins will appear here after the AI analyzes them.</span>
+                </div>
+            }
+            else
+            {
+                <div class="wellness-history-scroll">
+                    @foreach (var entry in history)
+                    {
+                        <article class="wellness-history-entry">
+                            <div class="text-muted small">@entry.LoggedAt.ToString("dddd, d MMMM yyyy · HH:mm")</div>
+                            <div class="wellness-entry-symptoms">@entry.Symptoms</div>
+                            @if (!string.IsNullOrWhiteSpace(entry.AiAnalysis))
+                            {
+                                <div class="small mt-2">@entry.AiAnalysis</div>
+                            }
+                            @if (!string.IsNullOrWhiteSpace(entry.SuggestedMeal))
+                            {
+                                <div class="small text-success mt-2">Suggested: @entry.SuggestedMeal</div>
+                            }
+                        </article>
+                    }
+                </div>
+            }
+        </aside>
+    </div>
 }
 
 @code {
