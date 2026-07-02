@@ -61,7 +61,13 @@ public class AppDbContext : IdentityDbContext<IdentityUser>
             .HasIndex(mc => new { mc.Platform, mc.ExternalUserId })
             .IsUnique();
 
-        
+        builder.Entity<MessagingLog>()
+            .HasOne(ml => ml.MealLog)
+            .WithMany()
+            .HasForeignKey(ml => ml.MealLogId)
+            .OnDelete(DeleteBehavior.SetNull);
+
+
         builder.Entity<UserProfile>()
             .Property(u => u.Gender).HasConversion<string>();
         builder.Entity<UserProfile>()
